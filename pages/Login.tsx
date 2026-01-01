@@ -12,6 +12,26 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [isPending, setIsPending] = useState(false);
 
+  // DIAGNOSTIC STATE
+  const [apiStatus, setApiStatus] = useState<string>('Checking Server...');
+  const [apiUrl, setApiUrl] = useState<string>('');
+
+  React.useEffect(() => {
+    // 1. Show configured API URL
+    // @ts-ignore
+    const url = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
+    setApiUrl(url);
+
+    // 2. Ping Server
+    fetch(`${url}/health`)
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error(res.status + ' ' + res.statusText);
+      })
+      .then(data => setApiStatus(`✅ Online: ${data.message}`))
+      .catch(err => setApiStatus(`❌ Offline: ${err.message}`));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -57,6 +77,13 @@ export const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-slate-950">
       <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/20 to-slate-900 pointer-events-none"></div>
+
+      {/* DIAGNOSTIC PANEL */}
+      <div className="absolute top-4 left-4 p-4 bg-black/80 text-xs text-green-400 font-mono rounded border border-green-900 z-50">
+        <p className="text-white font-bold mb-1">Server Diagnostics:</p>
+        <p>Target: {apiUrl}</p>
+        <p>Status: {apiStatus}</p>
+      </div>
 
       <Reveal width="100%" className="max-w-md w-full">
         <div className="glass-card p-8 rounded-2xl shadow-2xl shadow-black/50 border border-white/10 relative z-10">
