@@ -5,6 +5,8 @@ import fs from 'fs';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 
+import 'dotenv/config'; // Load env vars
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -25,8 +27,8 @@ const getDB = () => {
                 users: [{
                     id: 'admin-1',
                     name: 'Admin User',
-                    email: 'enlightenpharmaacademy@gmail.com',
-                    password: 'Sk@001001', // Updated per user request
+                    email: process.env.ADMIN_EMAIL || 'enlightenpharmaacademy@gmail.com',
+                    password: process.env.ADMIN_PASSWORD || 'Sk@001001',
                     role: 'admin',
                     status: 'approved',
                     enrolledCourses: []
