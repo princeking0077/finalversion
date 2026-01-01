@@ -23,6 +23,14 @@ export const api = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
+
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") === -1) {
+                const text = await res.text();
+                console.error("API returned non-JSON:", text.substring(0, 100));
+                return { success: false, message: `Server Error: Expected JSON but got ${contentType}. URL likely correct, but server logic failed.` };
+            }
+
             if (!res.ok) {
                 console.error('Login Fetch Error:', res.status, res.statusText);
                 throw new Error(`Server returned ${res.status} ${res.statusText}`);
@@ -46,6 +54,13 @@ export const api = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(user),
             });
+
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") === -1) {
+                const text = await res.text();
+                return { success: false, message: `Server Error: Expected JSON but got ${contentType}` };
+            }
+
             if (!res.ok) {
                 console.error('Register Fetch Error:', res.status, res.statusText);
                 throw new Error(`Server returned ${res.status} ${res.statusText}`);

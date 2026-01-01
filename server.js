@@ -14,9 +14,24 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'dist')));
+// Debugging: Log all requests
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
+// Test Endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is working!' });
+});
+
+// ... (Existing API Routes) ...
+// Ensure this is BEFORE the SPA fallback
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ success: false, message: `API Endpoint not found: ${req.method} ${req.url}` });
+});
+
+// SPA Fallback
 
 // Helper to read/write DB
 const getDB = () => {
