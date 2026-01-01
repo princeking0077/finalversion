@@ -169,11 +169,11 @@ app.all('/api/*', (req, res) => {
 // ... (API Routes above)
 
 // Static Files (Move to bottom to ensure API routes are hit first)
-// app.use(express.static(path.join(__dirname, 'dist'))); // Moved to bottom
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // SPA Fallback
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
