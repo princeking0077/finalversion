@@ -14,6 +14,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
 // Debugging: Log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -23,6 +27,32 @@ app.use((req, res, next) => {
 // Test Endpoint
 app.get('/api/test', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is working!' });
+});
+
+// ... (Health Check omitted for brevity, it's fine) ...
+
+// API Router
+const apiRouter = express.Router();
+
+// Auth
+apiRouter.post('/auth/login', (req, res) => {
+    try {
+        console.log('Login Request:', req.body);
+        const { email, password } = req.body;
+        const db = getDB();
+        const user = db.users.find(u => u.email === email && u.password === password);
+
+        if (user) {
+            const { password, ...userWithoutPass } = user;
+            res.json({ success: true, user: userWithoutPass });
+        } else {
+            console.log('Login Failed: Invalid credentials');
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (e) {
+        console.error('Login Error:', e);
+        res.status(500).json({ success: false, message: 'Server Login Error: ' + e.message });
+    }
 });
 
 // Health Check & File System Inspection
