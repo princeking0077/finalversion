@@ -41,7 +41,8 @@ export interface Question {
   id: string;
   text: string;
   options: string[]; // Array of 4 options
-  correctOptionIndex: number; // 0-3
+  correctOptionIndex: number; // 0-3 (Legacy for SCQ)
+  correctOptionIndexes?: number[]; // Array of indices 0-3 for Multiple Response (MSQ)
   explanation?: string; // Explanation for the correct answer
   imageUrl?: string; // Optional image URL for chemical structures etc.
 }

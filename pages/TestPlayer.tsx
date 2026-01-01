@@ -13,7 +13,7 @@ export const TestPlayer = () => {
     const { addToast } = useToast();
     const [test, setTest] = useState<TestItem | null>(null);
     const [currentQIndex, setCurrentQIndex] = useState(0);
-    const [answers, setAnswers] = useState<{ [key: number]: number }>({}); // qIndex -> optionIndex
+    const [answers, setAnswers] = useState<{ [key: number]: number | number[] }>({}); // qIndex -> optionIndex or array of indices
     const [timeLeft, setTimeLeft] = useState(0); // seconds
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [score, setScore] = useState(0);
@@ -91,8 +91,29 @@ export const TestPlayer = () => {
     }, [timeLeft, isSubmitted, test]);
 
     const handleOptionSelect = (optionIndex: number) => {
-        if (isSubmitted) return;
-        setAnswers(prev => ({ ...prev, [currentQIndex]: optionIndex }));
+        if (isSubmitted || !test) return;
+
+        const currentQ = test.questions[currentQIndex];
+        const isMSQ = currentQ.correctOptionIndexes && currentQ.correctOptionIndexes.length > 1;
+
+        if (isMSQ) {
+            setAnswers(prev => {
+                const current = prev[currentQIndex];
+                let newSelection: number[] = [];
+                if (Array.isArray(current)) {
+                    if (current.includes(optionIndex)) {
+                        newSelection = current.filter(i => i !== optionIndex);
+                    } else {
+                        newSelection = [...current, optionIndex];
+                    }
+                } else {
+                    newSelection = [optionIndex];
+                }
+                return { ...prev, [currentQIndex]: newSelection.sort((a, b) => a - b) };
+            });
+        } else {
+            setAnswers(prev => ({ ...prev, [currentQIndex]: optionIndex }));
+        }
     };
 
     const handleSubmit = () => {
@@ -100,10 +121,26 @@ export const TestPlayer = () => {
 
         let calcScore = 0;
         test.questions.forEach((q, idx) => {
-            if (answers[idx] === q.correctOptionIndex) {
-                calcScore += (test.positiveMarks || 4);
-            } else if (answers[idx] !== undefined) {
-                calcScore -= (test.negativeMarks || 1);
+            const userAns = answers[idx];
+
+            // Check MSQ
+            if (q.correctOptionIndexes && q.correctOptionIndexes.length > 0) {
+                const correctSet = q.correctOptionIndexes.sort((a, b) => a - b).join(',');
+                const userSet = Array.isArray(userAns) ? userAns.sort((a, b) => a - b).join(',') : (userAns !== undefined ? userAns.toString() : '');
+
+                if (userSet === correctSet) {
+                    calcScore += (test.positiveMarks || 4);
+                } else if (userAns !== undefined) {
+                    // Partial marking? Assuming strict for now as per "0,1,2" example implication
+                    calcScore -= (test.negativeMarks || 1);
+                }
+            } else {
+                // SCQ Legacy
+                if (userAns === q.correctOptionIndex) {
+                    calcScore += (test.positiveMarks || 4);
+                } else if (userAns !== undefined) {
+                    calcScore -= (test.negativeMarks || 1);
+                }
             }
         });
         setScore(calcScore);
@@ -174,12 +211,13 @@ export const TestPlayer = () => {
                                     <button
                                         key={idx}
                                         onClick={() => handleOptionSelect(idx)}
-                                        className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center ${answers[currentQIndex] === idx
-                                            ? 'bg-teal-500/20 border-teal-500 text-white'
-                                            : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
+                                        className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center ${(Array.isArray(answers[currentQIndex]) && (answers[currentQIndex] as number[]).includes(idx)) || answers[currentQIndex] === idx
+                                                ? 'bg-teal-500/20 border-teal-500 text-white'
+                                                : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
                                             }`}
                                     >
-                                        <div className={`w-6 h-6 rounded-full border mr-4 flex items-center justify-center text-xs font-bold ${answers[currentQIndex] === idx ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-600 text-slate-500'
+                                        <div className={`w-6 h-6 rounded-full border mr-4 flex items-center justify-center text-xs font-bold ${(Array.isArray(answers[currentQIndex]) && (answers[currentQIndex] as number[]).includes(idx)) || answers[currentQIndex] === idx
+                                                ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-600 text-slate-500'
                                             }`}>
                                             {String.fromCharCode(65 + idx)}
                                         </div>
@@ -255,19 +293,37 @@ export const TestPlayer = () => {
                             <div className="space-y-6 text-left mb-8 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <h3 className="text-white font-bold border-b border-white/10 pb-2">Detailed Analysis</h3>
                                 {test.questions.map((q, idx) => {
-                                    const isCorrect = answers[idx] === q.correctOptionIndex;
-                                    const isSkipped = answers[idx] === undefined;
+                                    const userAns = answers[idx];
+                                    const isMSQ = q.correctOptionIndexes && q.correctOptionIndexes.length > 0;
+                                    let isCorrect = false;
+
+                                    if (isMSQ) {
+                                        const correctSet = q.correctOptionIndexes!.sort().join(',');
+                                        const userSet = Array.isArray(userAns) ? userAns.sort().join(',') : (userAns !== undefined ? userAns.toString() : '');
+                                        isCorrect = correctSet === userSet;
+                                    } else {
+                                        isCorrect = userAns === q.correctOptionIndex;
+                                    }
+
+                                    const isSkipped = userAns === undefined;
                                     return (
                                         <div key={idx} className={`p-4 rounded-xl border ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/20' : isSkipped ? 'bg-slate-800/50 border-white/5' : 'bg-red-500/10 border-red-500/20'}`}>
                                             <p className="text-white font-bold mb-2"><span className="text-slate-500 mr-2">Q{idx + 1}.</span> {q.text}</p>
                                             <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                                                 <div className={`${isCorrect ? 'text-emerald-400' : isSkipped ? 'text-slate-400' : 'text-red-400'}`}>
                                                     <span className="font-bold block text-xs opacity-70 uppercase">Your Answer</span>
-                                                    {isSkipped ? 'Skipped' : q.options[answers[idx]]}
+                                                    {isSkipped ? 'Skipped' : (
+                                                        Array.isArray(userAns)
+                                                            ? (userAns as number[]).map(i => q.options[i]).join(', ')
+                                                            : q.options[userAns as number]
+                                                    )}
                                                 </div>
                                                 <div className="text-emerald-400">
                                                     <span className="font-bold block text-xs opacity-70 uppercase">Correct Answer</span>
-                                                    {q.options[q.correctOptionIndex]}
+                                                    {isMSQ
+                                                        ? q.correctOptionIndexes!.map(i => q.options[i]).join(', ')
+                                                        : q.options[q.correctOptionIndex]
+                                                    }
                                                 </div>
                                             </div>
                                             {q.explanation && (
