@@ -21,7 +21,20 @@ const getDB = () => {
     try {
         if (!fs.existsSync(DB_FILE)) {
             // Init if missing
-            const initial = { users: [], tests: [], resources: [], results: [] };
+            const initial = {
+                users: [{
+                    id: 'admin-1',
+                    name: 'Admin User',
+                    email: 'enlightenpharmaacademy@gmail.com',
+                    password: 'Sk@001001', // Updated per user request
+                    role: 'admin',
+                    status: 'approved',
+                    enrolledCourses: []
+                }],
+                tests: [],
+                resources: [],
+                results: []
+            };
             fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
             return initial;
         }
