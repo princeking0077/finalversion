@@ -25,6 +25,39 @@ app.get('/api/test', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is working!' });
 });
 
+// Health Check & File System Inspection
+app.get('/api/health-check', (req, res) => {
+    try {
+        const distPath = path.join(__dirname, '../dist');
+        const rootPath = path.join(__dirname, '..');
+
+        let distFiles = [];
+        let rootFiles = [];
+
+        if (fs.existsSync(distPath)) {
+            distFiles = fs.readdirSync(distPath);
+        } else {
+            distFiles = ['DIST FOLDER MISSING'];
+        }
+
+        if (fs.existsSync(rootPath)) {
+            rootFiles = fs.readdirSync(rootPath);
+        }
+
+        res.json({
+            status: 'ok',
+            cwd: process.cwd(),
+            __dirname: __dirname,
+            distPath: distPath,
+            distExists: fs.existsSync(distPath),
+            distContents: distFiles,
+            rootContents: rootFiles
+        });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
 // ... (Existing API Routes) ...
 // Ensure this is BEFORE the SPA fallback
 app.all('/api/*', (req, res) => {
