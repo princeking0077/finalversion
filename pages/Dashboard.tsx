@@ -780,7 +780,7 @@ const BrowseCoursesTab = ({ user }: { user: User }) => {
                   </div>
 
                   <div className="mt-auto flex items-center justify-between">
-                    <div className="text-lg font-bold text-white">₹{course.price}</div>
+                    <div className="text-lg font-bold text-white">{course.price === 0 ? 'Free' : `₹${course.price}`}</div>
                     {isEnrolled ? (
                       <span className="text-emerald-400 font-bold flex items-center gap-1 text-sm">
                         <CheckCircle className="w-4 h-4" /> Enrolled

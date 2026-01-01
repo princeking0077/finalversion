@@ -61,6 +61,21 @@ export const COURSES: Course[] = [
     description: 'Diploma Pharmacy Exit Exam full syllabus coverage.',
     chapters: 40,
     students: 500
+  },
+  {
+    id: "GPAT - 2026",
+    title: "DEMO MOCK TEST",
+    description: "This Demo Mock Test is designed to help GPAT aspirants experience a real exam-like environment before enrolling in the full test series.\n\nThe mock test is strictly based on the latest GPAT exam pattern and include carefully framed MCQs with correct answers and detailed explanations, allowing you to analyze your performance and improve accuracy and speed.\n\nThis is an excellent opportunity to evaluate your preparation level and understand how our GPAT test series works and get excited offers exclusive for Mock Test registered student.",
+    originalPrice: 149,
+    validityDays: 1,
+    duration: "3+",
+    color: "from-emerald-500 to-teal-500",
+    students: 0,
+    chapters: 0,
+    rating: 5,
+    price: 0,
+    category: "Mock Test",
+    icon: "clipboard-list"
   }
 ];
 

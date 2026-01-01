@@ -168,7 +168,7 @@ export const Home = () => {
                       <div>
                         <span className="text-xs text-slate-500 block">Course Fee</span>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold text-white">₹{course.price}</span>
+                          <span className="text-xl font-bold text-white">{course.price === 0 ? 'Free' : `₹${course.price}`}</span>
                           <span className="text-sm text-slate-600 line-through">₹{course.originalPrice}</span>
                         </div>
                       </div>
