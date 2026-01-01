@@ -250,6 +250,34 @@ apiRouter.post('/auth/login', (req, res) => {
         if (user) {
             const { password, ...userWithoutPass } = user;
 
+            // Expiry Check Logic
+            if (user.role === 'student' && user.enrolledCourses && user.enrolledCourses.length > 0) {
+                const today = new Date();
+                let allExpired = true;
+
+                // Check if ALL courses are expired
+                user.enrolledCourses.forEach(cId => {
+                    const expiryStr = user.courseExpiry ? user.courseExpiry[cId] : null;
+                    if (!expiryStr || new Date(expiryStr) > today) {
+                        allExpired = false;
+                    }
+                });
+
+                if (allExpired) {
+                    user.status = 'expired';
+                    saveDB(db); // Persist expiration status
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Your account has expired as all your course enrollments have ended. Please contact admin to renew.'
+                    });
+                }
+            }
+
+            // General Status Check
+            if (user.status === 'expired' || user.status === 'rejected' || user.status === 'inactive') {
+                return res.status(403).json({ success: false, message: 'Account is ' + user.status + '. Please contact admin.' });
+            }
+
             // Generate Session
             const token = crypto.randomUUID();
             SESSIONS[token] = {

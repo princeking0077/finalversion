@@ -47,7 +47,7 @@ export const Payment = () => {
 
             // Find Course
             const allCourses = await api.getCourses();
-            const selectedCourse = allCourses.find(c => c.id === (courseId || currentUser?.enrolledCourses[0])); // Fallback to first enrolled or query
+            const selectedCourse = allCourses.find(c => c.id === (courseId || currentUser?.enrolledCourses?.[0])); // Fallback to first enrolled or query
             setCourse(selectedCourse || COURSES[0]); // Fallback to dummy if empty
 
             setLoading(false);

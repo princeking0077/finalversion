@@ -388,7 +388,18 @@ const ClassroomTab = ({ resources, user, courses }: { resources: CourseResource[
                 <div>
                   <h3 className="font-bold text-white mb-1">{course.title}</h3>
                   <div className="text-xs text-slate-400">
-                    {isCourseExpired(course.id, user) ? <span className="text-rose-400">Expired</span> : <span className="text-emerald-400">Active</span>}
+                    {isCourseExpired(course.id, user) ? (
+                      <span className="text-rose-400 font-bold">Expired</span>
+                    ) : (
+                      <div className="flex flex-col">
+                        <span className="text-emerald-400 font-bold">Active</span>
+                        {user.courseExpiry && user.courseExpiry[course.id] && (
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Valid till: {new Date(user.courseExpiry[course.id]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {course.redirectLink && !isCourseExpired(course.id, user) && (
