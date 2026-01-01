@@ -1,14 +1,17 @@
 <IfModule mod_rewrite.c>
+    DirectoryIndex disabled
     RewriteEngine On
     
     # Force HTTPS
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # Use passenger (Hostinger standard) or proxy to local port if passenger not active
-    # But usually just setting the start file is enough.
-    # This rule simply says: "If it's not a real file, send to server.js"
-    
+    # FORCE server.js for EVERYTHING
+    # This prevents Hostinger from serving the source index.html
+    RewriteRule ^$ server.js [L]
+    RewriteRule ^index\.html$ server.js [L]
+
+    # Standard Fallback
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ server.js [QSA,L]
