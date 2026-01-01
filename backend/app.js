@@ -24,39 +24,61 @@ app.use((req, res, next) => {
     next();
 });
 
-// Test Endpoint
-app.get('/api/test', (req, res) => {
-    res.json({ status: 'ok', message: 'Backend is working!' });
-});
+// Helper to read/write DB
+const getDB = () => {
+    try {
+        if (!fs.existsSync(DB_FILE)) {
+            // Init if missing
+            const initial = {
+                users: [{
+                    id: 'admin-1',
+                    name: 'Admin User',
+                    email: process.env.ADMIN_EMAIL || 'enlightenpharmaacademy@gmail.com',
+                    password: process.env.ADMIN_PASSWORD || 'Sk@001001',
+                    role: 'admin',
+                    status: 'approved',
+                    enrolledCourses: []
+                }],
+                tests: [],
+                resources: [],
+                results: []
+            };
+            fs.ensureDirectoryExists && fs.ensureDirectoryExists(path.dirname(DB_FILE)); // Safety check if using fs-extra, but we are using native fs, so:
+            if (!fs.existsSync(path.dirname(DB_FILE))) {
+                fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+            }
+            fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
+            return initial;
+        }
+        return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    } catch (e) {
+        console.error("DB Read Error:", e);
+        return { users: [], tests: [], resources: [], results: [] };
+    }
+};
 
-// ... (Health Check omitted for brevity, it's fine) ...
+const saveDB = (data) => {
+    try {
+        if (!fs.existsSync(path.dirname(DB_FILE))) {
+            fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+        }
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error("DB Save Error:", e);
+    }
+};
 
-// API Router
+// ==========================================
+// API Router Definition
+// ==========================================
 const apiRouter = express.Router();
 
-// Auth
-apiRouter.post('/auth/login', (req, res) => {
-    try {
-        console.log('Login Request:', req.body);
-        const { email, password } = req.body;
-        const db = getDB();
-        const user = db.users.find(u => u.email === email && u.password === password);
-
-        if (user) {
-            const { password, ...userWithoutPass } = user;
-            res.json({ success: true, user: userWithoutPass });
-        } else {
-            console.log('Login Failed: Invalid credentials');
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-    } catch (e) {
-        console.error('Login Error:', e);
-        res.status(500).json({ success: false, message: 'Server Login Error: ' + e.message });
-    }
+// 1. Health & Test
+apiRouter.get('/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is working!', url: req.url });
 });
 
-// Health Check & File System Inspection
-app.get('/api/health-check', (req, res) => {
+apiRouter.get('/health-check', (req, res) => {
     try {
         const distPath = path.join(__dirname, '../dist');
         const rootPath = path.join(__dirname, '..');
@@ -88,77 +110,45 @@ app.get('/api/health-check', (req, res) => {
     }
 });
 
-// ... (Existing API Routes) ...
-// Ensure this is BEFORE the SPA fallback
-app.all('/api/*', (req, res) => {
-    res.status(404).json({ success: false, message: `API Endpoint not found: ${req.method} ${req.url}` });
-});
-
-// SPA Fallback
-
-// Helper to read/write DB
-const getDB = () => {
-    try {
-        if (!fs.existsSync(DB_FILE)) {
-            // Init if missing
-            const initial = {
-                users: [{
-                    id: 'admin-1',
-                    name: 'Admin User',
-                    email: process.env.ADMIN_EMAIL || 'enlightenpharmaacademy@gmail.com',
-                    password: process.env.ADMIN_PASSWORD || 'Sk@001001',
-                    role: 'admin',
-                    status: 'approved',
-                    enrolledCourses: []
-                }],
-                tests: [],
-                resources: [],
-                results: []
-            };
-            fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
-            return initial;
-        }
-        return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-    } catch (e) {
-        return { users: [], tests: [], resources: [], results: [] };
-    }
-};
-
-const saveDB = (data) => {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-};
-
-// API Router
-const apiRouter = express.Router();
-
-// Auth
+// 2. Auth Routes
 apiRouter.post('/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    const db = getDB();
-    const user = db.users.find(u => u.email === email && u.password === password);
+    try {
+        console.log('Login Request:', req.body);
+        const { email, password } = req.body;
+        const db = getDB();
+        const user = db.users.find(u => u.email === email && u.password === password);
 
-    if (user) {
-        const { password, ...userWithoutPass } = user;
-        res.json({ success: true, user: userWithoutPass });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
+        if (user) {
+            const { password, ...userWithoutPass } = user;
+            res.json({ success: true, user: userWithoutPass });
+        } else {
+            console.log('Login Failed: Invalid credentials');
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (e) {
+        console.error('Login Error:', e);
+        res.status(500).json({ success: false, message: 'Server Login Error: ' + e.message });
     }
 });
 
 apiRouter.post('/auth/register', (req, res) => {
-    const newUser = req.body;
-    const db = getDB();
+    try {
+        const newUser = req.body;
+        const db = getDB();
 
-    if (db.users.find(u => u.email === newUser.email)) {
-        return res.status(400).json({ success: false, message: 'Email already exists' });
+        if (db.users.find(u => u.email === newUser.email)) {
+            return res.status(400).json({ success: false, message: 'Email already exists' });
+        }
+
+        db.users.push(newUser);
+        saveDB(db);
+        res.json({ success: true, message: 'Registration successful' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
     }
-
-    db.users.push(newUser);
-    saveDB(db);
-    res.json({ success: true, message: 'Registration successful' });
 });
 
-// Users
+// 3. User Routes
 apiRouter.get('/users', (req, res) => {
     const db = getDB();
     const safeUsers = db.users.map(({ password, ...u }) => u);
@@ -180,7 +170,7 @@ apiRouter.put('/users/:id', (req, res) => {
     }
 });
 
-// Tests
+// 4. Test & Resource Routes
 apiRouter.get('/tests', (req, res) => {
     const db = getDB();
     res.json(db.tests);
@@ -194,7 +184,6 @@ apiRouter.post('/tests', (req, res) => {
     res.json({ success: true, test: newTest });
 });
 
-// Resources
 apiRouter.get('/resources', (req, res) => {
     const db = getDB();
     res.json(db.resources);
@@ -216,9 +205,9 @@ apiRouter.delete('/resources/:id', (req, res) => {
     res.json({ success: true });
 });
 
-apiRouter.get('/test', (req, res) => {
-    res.json({ status: 'ok', message: 'Backend is working!', url: req.url, originalUrl: req.originalUrl });
-});
+// ==========================================
+// MOUNTING & STATIC FILES
+// ==========================================
 
 // Mount Router at both /api and root to handle potential path stripping
 app.use('/api', apiRouter);
@@ -229,12 +218,10 @@ app.all('/api/*', (req, res) => {
     res.status(404).json({ success: false, message: `API Endpoint not found: ${req.method} ${req.url}` });
 });
 
-// ... (API Routes above)
-
 // Static Files (Move to bottom to ensure API routes are hit first)
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// Debug Root Handler
+// Debug Root Handler (Server-Side Rendering of Entry Check)
 app.get('/', (req, res) => {
     const indexPath = path.join(__dirname, '../dist', 'entry.html');
     if (!fs.existsSync(indexPath)) {
