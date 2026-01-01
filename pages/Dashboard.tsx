@@ -26,7 +26,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { api, User } from '../utils/api';
-import { TestItem, DashboardTab, TestResult, CourseResource } from '../types';
+import { TestItem, DashboardTab, TestResult, CourseResource, Course } from '../types';
 import { COURSES } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Logo } from '../components/Logo';
@@ -41,14 +41,16 @@ export const Dashboard = () => {
   const [assignedTests, setAssignedTests] = useState<TestItem[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
   const [resources, setResources] = useState<CourseResource[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const loadData = async (currentUser: User) => {
     try {
       // Parallel fetch for speed
-      const [allTests, userResults, allResources] = await Promise.all([
+      const [allTests, userResults, allResources, allCourses] = await Promise.all([
         api.getTests(),
         api.getUserResults(currentUser.id),
-        api.getResources()
+        api.getResources(),
+        api.getCourses()
       ]);
 
       const myTests = allTests.filter(t => currentUser.enrolledCourses.includes(t.courseId));
@@ -57,6 +59,9 @@ export const Dashboard = () => {
 
       const myResources = allResources.filter(r => currentUser.enrolledCourses.includes(r.courseId));
       setResources(myResources);
+
+      const myCourses = allCourses.filter(c => currentUser.enrolledCourses.includes(c.id));
+      setCourses(myCourses);
     } catch (e) {
       console.error("Failed to load dashboard data");
     }
@@ -205,7 +210,7 @@ export const Dashboard = () => {
           <div className="max-w-7xl mx-auto animate-fade-in pb-20 md:pb-10">
             {activeTab === DashboardTab.OVERVIEW && <OverviewTab setActiveTab={setActiveTab} user={user} assignedTests={assignedTests} results={results} />}
             {activeTab === DashboardTab.SUBJECT_TESTS && <AssignedTestsTab tests={assignedTests} results={results} user={user} onRefresh={handleManualRefresh} />}
-            {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} user={user} />}
+            {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} user={user} courses={courses} />}
             {activeTab === DashboardTab.ANALYTICS && <AnalyticsTab results={results} />}
           </div>
         </div>
@@ -360,9 +365,38 @@ const isCourseExpired = (courseId: string, user: User) => {
   return new Date(user.courseExpiry[courseId]) < new Date();
 };
 
-const ClassroomTab = ({ resources, user }: { resources: CourseResource[], user: User }) => {
+const ClassroomTab = ({ resources, user, courses }: { resources: CourseResource[], user: User, courses: Course[] }) => {
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
+      {/* Active Courses Section with Redirect Links */}
+      {courses.length > 0 && (
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">My Active Courses</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.map(course => (
+              <div key={course.id} className="glass-card p-5 rounded-2xl border border-white/5 flex justify-between items-center group hover:border-indigo-500/20 transition-all">
+                <div>
+                  <h3 className="font-bold text-white mb-1">{course.title}</h3>
+                  <div className="text-xs text-slate-400">
+                    {isCourseExpired(course.id, user) ? <span className="text-rose-400">Expired</span> : <span className="text-emerald-400">Active</span>}
+                  </div>
+                </div>
+                {course.redirectLink && !isCourseExpired(course.id, user) && (
+                  <a
+                    href={course.redirectLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+                  >
+                    <Video className="w-4 h-4" /> Join Class
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-end mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white font-heading">My Classroom</h2>
@@ -387,7 +421,7 @@ const ClassroomTab = ({ resources, user }: { resources: CourseResource[], user: 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {resources.map((res) => {
             const expired = isCourseExpired(res.courseId, user);
-            const courseTitle = COURSES.find(c => c.id === res.courseId)?.title;
+            const courseTitle = courses.find(c => c.id === res.courseId)?.title || 'Unknown Course';
 
             return (
               <div key={res.id} className={`glass-card rounded-2xl overflow-hidden border border-white/5 transition-all group flex flex-col ${expired ? 'opacity-60 grayscale' : 'hover:border-indigo-500/40 hover:-translate-y-2 hover:shadow-2xl'

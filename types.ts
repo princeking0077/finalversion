@@ -13,6 +13,7 @@ export interface Course {
   description: string;
   chapters: number;
   students: number;
+  redirectLink?: string;
 }
 
 export interface FaqItem {

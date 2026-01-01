@@ -847,6 +847,17 @@ const CourseManagerTab = ({ users, courses, onUpdate }: { users: User[], courses
             />
           </div>
 
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-400 uppercase">Redirect Link (e.g. WhatsApp/Zoom)</label>
+            <input
+              type="text"
+              value={editingCourse.redirectLink || ''}
+              onChange={e => setEditingCourse({ ...editingCourse, redirectLink: e.target.value })}
+              className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none"
+              placeholder="https://..."
+            />
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400 uppercase">Price (₹)</label>
