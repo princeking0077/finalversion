@@ -70,6 +70,7 @@ export enum DashboardTab {
   OVERVIEW = 'overview',
   SUBJECT_TESTS = 'subject_tests',
   CLASSROOM = 'classroom',
+  BROWSE_COURSES = 'browse_courses',
   ANALYTICS = 'analytics',
   LEADERBOARD = 'leaderboard'
 }

@@ -11,6 +11,7 @@ import { About } from './pages/About';
 import { Legal } from './pages/Legal';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Payment } from './pages/Payment';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { TestPlayer } from './pages/TestPlayer';
 import { NotFound } from './pages/NotFound';
@@ -36,6 +37,7 @@ function App() {
           {/* Standalone Pages (No Header/Footer) */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/payment" element={<Payment />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/test/:testId" element={<TestPlayer />} />

@@ -23,7 +23,8 @@ import {
   Bookmark,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
 import { api, User } from '../utils/api';
 import { TestItem, DashboardTab, TestResult, CourseResource, Course } from '../types';
@@ -141,6 +142,7 @@ export const Dashboard = () => {
               { id: DashboardTab.OVERVIEW, icon: LayoutDashboard, label: 'Overview' },
               { id: DashboardTab.SUBJECT_TESTS, icon: BookOpen, label: 'Assessments' },
               { id: DashboardTab.CLASSROOM, icon: Video, label: 'My Classroom' },
+              { id: DashboardTab.BROWSE_COURSES, icon: Plus, label: 'Browse Courses' },
               { id: DashboardTab.ANALYTICS, icon: BarChart2, label: 'Analytics' },
               { id: DashboardTab.LEADERBOARD, icon: Award, label: 'Leaderboard' },
             ].map((item) => (
@@ -212,6 +214,7 @@ export const Dashboard = () => {
             {activeTab === DashboardTab.OVERVIEW && <OverviewTab setActiveTab={setActiveTab} user={user} assignedTests={assignedTests} results={results} />}
             {activeTab === DashboardTab.SUBJECT_TESTS && <AssignedTestsTab tests={assignedTests} results={results} user={user} onRefresh={handleManualRefresh} />}
             {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} user={user} courses={courses} />}
+            {activeTab === DashboardTab.BROWSE_COURSES && <BrowseCoursesTab user={user} />}
             {activeTab === DashboardTab.ANALYTICS && <AnalyticsTab results={results} />}
             {activeTab === DashboardTab.LEADERBOARD && <LeaderboardTab courses={courses} user={user} />}
           </div>
@@ -703,6 +706,78 @@ const AssignedTestsTab = ({ tests, results, user, onRefresh }: { tests: TestItem
                       Start Test
                     </button>
                   )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+const BrowseCoursesTab = ({ user }: { user: User }) => {
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const data = await api.getCourses();
+      setCourses(data);
+      setLoading(false);
+    };
+    fetchCourses();
+  }, []);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h2 className="text-2xl font-bold text-white font-heading">Browse Courses</h2>
+        <p className="text-slate-400">Explore and enroll in new learning programs.</p>
+      </div>
+
+      {loading ? (
+        <div className="text-slate-500">Loading courses...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map(course => {
+            const isEnrolled = user.enrolledCourses.includes(course.id);
+            return (
+              <div key={course.id} className="glass-card rounded-2xl overflow-hidden border border-white/10 hover:border-teal-500/30 transition-all group flex flex-col">
+                {/* Decorative Header */}
+                <div className={`h-32 bg-gradient-to-r ${course.color || 'from-slate-800 to-slate-700'} relative p-6 flex items-end`}>
+                  <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10">
+                    {course.category}
+                  </div>
+                  <h3 className="text-xl font-bold text-white shadow-black drop-shadow-md">{course.title}</h3>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col">
+                  <p className="text-sm text-slate-400 mb-6 line-clamp-3">{course.description}</p>
+
+                  <div className="flex items-center gap-4 text-xs font-bold text-slate-500 mb-6 uppercase tracking-wider">
+                    <span>{course.duration}</span>
+                    <span>•</span>
+                    <span>{course.students} Students</span>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between">
+                    <div className="text-lg font-bold text-white">₹{course.price}</div>
+                    {isEnrolled ? (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1 text-sm">
+                        <CheckCircle className="w-4 h-4" /> Enrolled
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => navigate('/payment?courseId=' + course.id)}
+                        className="px-4 py-2 bg-white text-slate-900 font-bold rounded-lg hover:bg-teal-500 hover:text-white transition-colors text-sm"
+                      >
+                        Enroll Now
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

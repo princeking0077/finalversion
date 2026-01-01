@@ -18,6 +18,10 @@ export interface User {
     status: 'pending' | 'approved' | 'rejected';
     enrolledCourses: string[]; // Course IDs
     courseExpiry?: { [courseId: string]: string }; // ISO Date String of expiry
+    registrationId?: string;
+    paymentStatus?: 'pending' | 'verified' | 'failed';
+    screenshotSubmitted?: boolean;
+    screenshotSubmittedAt?: string;
 }
 
 // Internal helper for authenticated requests

@@ -76,7 +76,7 @@ export const Home = () => {
                 onClick={() => navigate('/register')}
                 className="px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all hover:border-white/20"
               >
-                Start Free Trial
+                Sign up for Free
               </button>
             </div>
           </div>

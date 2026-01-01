@@ -534,10 +534,11 @@ const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onSt
                 <th className="p-5 w-10">
                   <input type="checkbox" onChange={toggleSelectAll} checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0} className="rounded border-slate-700 bg-slate-800" />
                 </th>
+                <th className="p-5 font-semibold">Reg ID</th>
                 <th className="p-5 font-semibold">Student Name</th>
                 <th className="p-5 font-semibold">Email Address</th>
                 <th className="p-5 font-semibold">Status</th>
-                <th className="p-5 font-semibold">Registered</th>
+                <th className="p-5 font-semibold">Payment</th>
                 <th className="p-5 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -563,6 +564,7 @@ const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onSt
                         className="rounded border-slate-700 bg-slate-800"
                       />
                     </td>
+                    <td className="p-5 font-mono text-xs text-slate-400">{user.registrationId || '-'}</td>
                     <td className="p-5 font-medium text-white">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300">
@@ -571,7 +573,7 @@ const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onSt
                         {user.name}
                       </div>
                     </td>
-                    <td className="p-5 text-slate-300 font-mono text-sm">{user.email}</td>
+                    <td className="p-5 text-slate-300 font-mono text-sm max-w-[200px] truncate" title={user.email}>{user.email}</td>
                     <td className="p-5">
                       <span className={`text - [10px] font - bold px - 2 py - 1 rounded uppercase tracking - wider border ${user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                         user.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
@@ -580,8 +582,26 @@ const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onSt
                         {user.status}
                       </span>
                     </td>
-                    <td className="p-5 text-slate-500 text-sm">{new Date(parseInt(user.id)).toLocaleDateString()}</td>
+                    <td className="p-5">
+                      {user.paymentStatus === 'pending' && <span className="text-amber-400 text-xs font-bold">Pending</span>}
+                      {user.paymentStatus === 'verified' && <span className="text-emerald-400 text-xs font-bold">Paid</span>}
+                      {user.paymentStatus === 'failed' && <span className="text-rose-400 text-xs font-bold">Failed</span>}
+                      {user.screenshotSubmitted && <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-1 rounded">Screen</span>}
+                    </td>
                     <td className="p-5 text-right space-x-2">
+                      {/* VERIFY BUTTON FOR PAYMENT */}
+                      {user.paymentStatus === 'pending' && (
+                        <button
+                          onClick={async () => {
+                            await api.updateUser(user.id, { paymentStatus: 'verified', status: 'approved' });
+                            onUpdate();
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20 text-xs font-bold"
+                          title="Mark Payment as Verified and Approve User"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5 mr-1" /> VERIFY $
+                        </button>
+                      )}
                       {user.status === 'pending' && (
                         <>
                           <button

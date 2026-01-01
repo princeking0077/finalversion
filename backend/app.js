@@ -82,7 +82,13 @@ const getDB = () => {
                     password: process.env.ADMIN_PASSWORD || 'Sk@001001',
                     role: 'admin',
                     status: 'approved',
-                    enrolledCourses: []
+                    password: process.env.ADMIN_PASSWORD || 'Sk@001001',
+                    role: 'admin',
+                    status: 'approved',
+                    enrolledCourses: [],
+                    registrationId: 'ADMIN-001',
+                    paymentStatus: 'verified',
+                    screenshotSubmitted: false
                 }],
                 tests: [],
                 resources: [],
@@ -255,6 +261,14 @@ apiRouter.post('/auth/register', (req, res) => {
             return res.status(400).json({ success: false, message: 'Email already exists' });
         }
 
+        // Generate Registration ID
+        const datePart = new Date().getFullYear();
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+        newUser.registrationId = `REG-${datePart}-${randomPart}`;
+        newUser.paymentStatus = 'pending';
+        newUser.screenshotSubmitted = false;
+        newUser.status = 'pending'; // Default status until payment verified (or manual approval)
+
         db.users.push(newUser);
         saveDB(db);
         res.json({ success: true, message: 'Registration successful' });
@@ -277,6 +291,13 @@ apiRouter.put('/users/:id', (req, res) => {
     const index = db.users.findIndex(u => u.id === id);
 
     if (index !== -1) {
+        // Handle Payment Verification Logic
+        if (updates.paymentStatus === 'verified' && db.users[index].paymentStatus !== 'verified') {
+            // Grant Access to selected course if implied, OR just approve user.
+            // For now, if verification happens, we also Approve the user if they were pending.
+            db.users[index].status = 'approved';
+        }
+
         db.users[index] = { ...db.users[index], ...updates };
         saveDB(db);
         res.json({ success: true, user: db.users[index] });
