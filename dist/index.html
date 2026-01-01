@@ -1,145 +1,178 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Enlighten Pharma Academy</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              heading: ['Space Grotesk', 'sans-serif'],
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enlighten Pharma Academy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              850: '#151f32',
+              950: '#020617',
             },
-            colors: {
-              slate: {
-                850: '#151f32',
-                950: '#020617',
-              },
-              teal: {
-                450: '#2dd4bf',
-              }
-            },
-            animation: {
-              'float': 'float 6s ease-in-out infinite',
-              'float-delayed': 'float 6s ease-in-out 3s infinite',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-20px)' },
-              }
+            teal: {
+              450: '#2dd4bf',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'float-delayed': 'float 6s ease-in-out 3s infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
             }
           }
         }
       }
-    </script>
-    <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #020617; /* slate-950 */
-        color: #f8fafc; /* slate-50 */
-        overflow-x: hidden;
-      }
-      
-      h1, h2, h3, h4, h5, h6 {
-        font-family: 'Space Grotesk', sans-serif;
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #020617;
+      /* slate-950 */
+      color: #f8fafc;
+      /* slate-50 */
+      overflow-x: hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #14b8a6;
+    }
+
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Custom Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
       }
 
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
       }
-      ::-webkit-scrollbar-track {
-        background: #0f172a; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #1e293b; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #14b8a6; 
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
       }
 
-      /* Smooth scrolling */
-      html {
-        scroll-behavior: smooth;
+      to {
+        opacity: 1;
       }
+    }
 
-      /* Custom Animations */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
+    .animate-fade-in {
+      animation: fadeIn 0.8s ease-out forwards;
+    }
 
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
+    .animate-slide-up {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      /* Start hidden */
+    }
 
-      .animate-fade-in {
-        animation: fadeIn 0.8s ease-out forwards;
-      }
+    .delay-100 {
+      animation-delay: 100ms;
+    }
 
-      .animate-slide-up {
-        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        opacity: 0; /* Start hidden */
-      }
+    .delay-200 {
+      animation-delay: 200ms;
+    }
 
-      .delay-100 { animation-delay: 100ms; }
-      .delay-200 { animation-delay: 200ms; }
-      .delay-300 { animation-delay: 300ms; }
-      .delay-400 { animation-delay: 400ms; }
+    .delay-300 {
+      animation-delay: 300ms;
+    }
 
-      /* Glassmorphism Utilities */
-      .glass {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-      }
-      
-      .glass-card {
-        background: rgba(30, 41, 59, 0.3); /* Slate-800 with opacity */
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.3s ease;
-      }
-      
-      .glass-card:hover {
-        background: rgba(30, 41, 59, 0.5);
-        border-color: rgba(20, 184, 166, 0.3);
-        transform: translateY(-4px);
-        box-shadow: 0 10px 40px -10px rgba(20, 184, 166, 0.2);
-      }
+    .delay-400 {
+      animation-delay: 400ms;
+    }
 
-      .glass-header {
-        background: rgba(2, 6, 23, 0.6);
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-      
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(255,255,255,0.1);
-        border-radius: 20px;
-      }
-    </style>
+    /* Glassmorphism Utilities */
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.3);
+      /* Slate-800 with opacity */
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      background: rgba(30, 41, 59, 0.5);
+      border-color: rgba(20, 184, 166, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 40px -10px rgba(20, 184, 166, 0.2);
+    }
+
+    .glass-header {
+      background: rgba(2, 6, 23, 0.6);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+    }
+  </style>
 
   <script type="importmap">
 {
@@ -153,9 +186,11 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-dCylts8y.js"></script>
+  <script type="module" crossorigin src="/assets/index-D-TNRlZc.js"></script>
 </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-teal-500 selection:text-white">
+
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-teal-500 selection:text-white">
   <div id="root"></div>
-  </body>
+</body>
+
 </html>
