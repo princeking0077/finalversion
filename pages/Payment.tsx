@@ -86,6 +86,9 @@ Thank you!`;
 
         const encodedMessage = encodeURIComponent(message);
         window.open(`https://wa.me/${WHATAPP_NUMBER}?text=${encodedMessage}`, '_blank');
+
+        // Redirect to dashboard after action
+        navigate('/dashboard');
     };
 
     if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
