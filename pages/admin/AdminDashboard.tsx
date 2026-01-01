@@ -1018,30 +1018,56 @@ const CourseManagerTab = ({ users, courses, onUpdate }: { users: User[], courses
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Available Courses</label>
-              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
                 {courses.map(course => (
                   <div
                     key={course.id}
                     onClick={() => setSelectedCourseId(course.id)}
-                    className={`p - 3 rounded - lg border cursor - pointer transition - all flex items - center gap - 3 ${selectedCourseId === course.id ? 'bg-indigo-500/20 border-indigo-500 text-white' : 'bg-slate-950 border-white/10 text-slate-400 hover:border-white/20'} `}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center gap-4 group relative overflow-hidden ${selectedCourseId === course.id
+                      ? 'bg-gradient-to-r from-indigo-600/20 to-indigo-500/10 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                      : 'bg-slate-950 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10'
+                      }`}
                   >
-                    <div className={`w - 3 h - 3 rounded - full bg - gradient - to - br ${course.color} `} />
-                    <span className="font-medium text-sm">{course.title}</span>
+                    {selectedCourseId === course.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>}
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${course.color || 'from-slate-700 to-slate-600'} flex items-center justify-center shadow-lg shrink-0`}>
+                      <span className="text-white font-bold text-xs">{course.title.charAt(0)}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-bold text-sm truncate ${selectedCourseId === course.id ? 'text-white' : 'group-hover:text-white transition-colors'}`}>{course.title}</div>
+                      <div className="text-xs text-slate-500 flex justify-between mt-1">
+                        <span>{course.students || 0} enrolled</span>
+                        <span>{course.price} INR</span>
+                      </div>
+                    </div>
+                    {selectedCourseId === course.id && <div className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.8)]"></div>}
                   </div>
                 ))}
-                {courses.length === 0 && <div className="text-slate-500 text-sm italic p-2">No courses found. Add one first.</div>}
+                {courses.length === 0 && <div className="text-slate-500 text-sm italic p-4 text-center border border-dashed border-white/10 rounded-xl">No courses found. Add one first.</div>}
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Validity Override (Optional)</label>
-              <input
-                type="number"
-                placeholder="Days (e.g. 365)"
-                value={validityOverride}
-                onChange={(e) => setValidityOverride(e.target.value)}
-                className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none"
-              />
-              <p className="text-xs text-slate-500 mt-2">Leave blank to use course default.</p>
+              <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Validity Period</label>
+              <div className="bg-slate-950 border border-white/10 rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-400">Course Default:</span>
+                  <span className="font-bold text-emerald-400 font-mono">
+                    {courses.find(c => c.id === selectedCourseId)?.validityDays || 365} Days
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="Override (Optional)"
+                    value={validityOverride}
+                    onChange={(e) => setValidityOverride(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none text-sm"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Leave blank to use the default <strong>{courses.find(c => c.id === selectedCourseId)?.validityDays || 365} days</strong>.
+                  Enter a number to override for this batch.
+                </p>
+              </div>
             </div>
           </div>
         </div>
