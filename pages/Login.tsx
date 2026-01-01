@@ -134,7 +134,7 @@ export const Login = () => {
 
             <button type="submit" className={`w-full text-white font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center ${role === 'admin' ? 'bg-indigo-500 hover:bg-indigo-400 shadow-indigo-500/20' : 'bg-teal-500 hover:bg-teal-400 shadow-teal-500/20'}`}>
               {role === 'admin' ? <ShieldCheck className="h-5 w-5 mr-2" /> : <LogIn className="h-5 w-5 mr-2" />}
-              Login as {role === 'admin' ? 'Admin' : 'Student'}
+              Login (v2)
             </button>
           </form>
 
