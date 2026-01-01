@@ -5,7 +5,7 @@ import fs from 'fs';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 
-import 'dotenv/config'; // Load env vars
+// import 'dotenv/config'; // Commented out to prevent crash if node_modules missing
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
