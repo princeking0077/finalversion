@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
     "dev": "vite",
-    "start": "node server.js",
+    "start": "node app.js",
     "build": "vite build",
     "preview": "vite preview"
   },
