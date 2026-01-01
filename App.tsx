@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Courses } from './pages/Courses';
@@ -19,7 +19,7 @@ import { ToastProvider } from './components/Toast';
 function App() {
   return (
     <ToastProvider>
-      <HashRouter>
+      <BrowserRouter>
         <ScrollToTop />
         <Routes>
           {/* Public Website Layout (With Header & Footer) */}
@@ -32,7 +32,7 @@ function App() {
             <Route path="legal/:policy" element={<Legal />} />
             <Route path="*" element={<NotFound />} />
           </Route>
-          
+
           {/* Standalone Pages (No Header/Footer) */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -40,7 +40,7 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/test/:testId" element={<TestPlayer />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </ToastProvider>
   );
 }
@@ -48,7 +48,7 @@ function App() {
 // Helper to scroll to top on route change
 function ScrollToTop() {
   const { pathname } = React.useMemo(() => window.location, []);
-  
+
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);

@@ -1,7 +1,12 @@
 import { TestItem, TestResult, CourseResource } from '../types';
 
 // API Base URL - In production, this might be dynamic, but for now relative path works if served from same origin
-const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
+// API Base URL - Strict Production URL to avoid confusion
+const API_URL = import.meta.env.PROD || window.location.hostname !== 'localhost'
+    ? '/api'
+    : 'http://localhost:3000/api';
+
+console.log("API Configured at:", API_URL);
 
 export interface User {
     id: string;
