@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DATABASE (Critical for Hostinger Persistence)
+backend/data/*.json
+!backend/data/.keep
