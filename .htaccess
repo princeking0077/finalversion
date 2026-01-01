@@ -1,18 +1,8 @@
-<IfModule mod_rewrite.c>
-    DirectoryIndex disabled
-    RewriteEngine On
-    
-    # Force HTTPS
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteEngine On
 
-    # FORCE server.js for EVERYTHING
-    # This prevents Hostinger from serving the source index.html
-    RewriteRule ^$ server.js [L]
-    RewriteRule ^index\.html$ server.js [L]
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # Standard Fallback
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ server.js [QSA,L]
-</IfModule>
+# Allow Node.js app to handle everything else
+# Do NOT add rules pointing to server.js here.
