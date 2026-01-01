@@ -184,6 +184,19 @@ export const AdminDashboard = () => {
 const OverviewTab = ({ users, tests, courses, setActiveTab }: { users: User[], tests: TestItem[], courses: Course[], setActiveTab: (t: AdminTab) => void }) => {
   const pendingCount = users.filter((u: User) => u.status === 'pending').length;
   const activeStudents = users.filter((u: User) => u.status === 'approved').length;
+  const verificationPending = users.filter((u: User) => u.paymentStatus === 'pending' && u.screenshotSubmitted).length;
+
+  // Calculate Revenue
+  const totalRevenue = users.reduce((acc, user) => {
+    if (user.status !== 'approved') return acc;
+    if (!user.enrolledCourses) return acc;
+
+    const userRevenue = user.enrolledCourses.reduce((sum, courseId) => {
+      const course = courses.find(c => c.id === courseId);
+      return sum + (course?.price || 0);
+    }, 0);
+    return acc + userRevenue;
+  }, 0);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -200,25 +213,25 @@ const OverviewTab = ({ users, tests, courses, setActiveTab }: { users: User[], t
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Pending Requests', value: pendingCount, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500/20 to-transparent', action: () => setActiveTab('approvals') },
-          { label: 'Total Students', value: activeStudents, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500/20 to-transparent', action: () => setActiveTab('courses') },
-          { label: 'Active Tests', value: tests.length, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', gradient: 'from-indigo-500/20 to-transparent', action: () => setActiveTab('tests') },
+          { label: 'Pending Approvals', value: pendingCount, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500/20 to-transparent', action: () => setActiveTab('approvals') },
+          { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: Award, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500/20 to-transparent', action: () => { } },
+          { label: 'Payment Verifications', value: verificationPending, icon: ShieldCheck, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', gradient: 'from-indigo-500/20 to-transparent', action: () => setActiveTab('approvals') },
           { label: 'Courses', value: courses.length, icon: BookOpen, color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/20', gradient: 'from-teal-500/20 to-transparent', action: () => setActiveTab('courses') },
         ].map((stat, i) => (
           <button
             key={i}
             onClick={stat.action}
-            className={`text - left glass - card p - 6 rounded - 2xl hover: transform hover: -translate - y - 1 transition - all duration - 300 border ${stat.border} hover: border - ${stat.color.replace('text-', '')} / 40 group relative overflow - hidden shadow - lg hover: shadow - 2xl`}
+            className={`text-left glass-card p-6 rounded-2xl hover:transform hover:-translate-y-1 transition-all duration-300 border ${stat.border} hover:border-${stat.color.replace('text-', '')}/40 group relative overflow-hidden shadow-lg hover:shadow-2xl`}
           >
-            <div className={`absolute inset - 0 bg - gradient - to - br ${stat.gradient} opacity - 0 group - hover: opacity - 100 transition - opacity`}></div>
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
             <div className="relative z-10">
-              <div className={`w - 12 h - 12 rounded - xl ${stat.bg} flex items - center justify - center mb - 4 group - hover: scale - 110 transition - transform shadow - lg border border - white / 10`}>
-                <stat.icon className={`h - 6 w - 6 ${stat.color} `} />
+              <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg border border-white/10`}>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
               </div>
               <p className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wider">{stat.label}</p>
               <p className="text-3xl font-bold text-white tracking-tight mb-1">{stat.value}</p>
               <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronRight className={`h - 5 w - 5 ${stat.color} `} />
+                <ChevronRight className={`h-5 w-5 ${stat.color}`} />
               </div>
             </div>
           </button>
