@@ -556,6 +556,12 @@ const CourseManagerTab = ({ users, refreshUsers }: { users: User[], refreshUsers
   const { addToast } = useToast();
   const [selectedCourse, setSelectedCourse] = useState(COURSES[0].id);
   const [validityOverride, setValidityOverride] = useState('');
+  const [itemsSearchTerm, setItemsSearchTerm] = useState(''); // Renamed to avoid confusion if used elsewhere, but variable name 'searchTerm' was used in loop
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+
+  // Use a local searchTerm constant if not using state for search yet, OR initialize state
+  // But wait, the line 561 uses `searchTerm`. Let's fix line 561 to use the state variable.
+  const [searchTerm, setSearchTerm] = useState('');
 
   const approvedStudents = users.filter((u: User) => u.status === 'approved');
   const filteredStudents = approvedStudents.filter((u: User) => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()));
