@@ -27,8 +27,8 @@ export const initDB = () => {
     const admin: User = {
       id: 'admin-1',
       name: 'Admin User',
-      email: 'admin@enlighten.com',
-      password: 'admin', // Simple password for demo
+      email: 'enlightenpharmaacademy@gmail.com',
+      password: 'Shoaib@001001', // Secure password
       role: 'admin',
       status: 'approved',
       enrolledCourses: []
