@@ -78,13 +78,6 @@ export const Login = () => {
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-slate-950">
       <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/20 to-slate-900 pointer-events-none"></div>
 
-      {/* DIAGNOSTIC PANEL */}
-      <div className="absolute top-4 left-4 p-4 bg-black/80 text-xs text-green-400 font-mono rounded border border-green-900 z-50">
-        <p className="text-white font-bold mb-1">Server Diagnostics:</p>
-        <p>Target: {apiUrl}</p>
-        <p>Status: {apiStatus}</p>
-      </div>
-
       <Reveal width="100%" className="max-w-md w-full">
         <div className="glass-card p-8 rounded-2xl shadow-2xl shadow-black/50 border border-white/10 relative z-10">
           <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white text-sm mb-6 transition-colors">
@@ -161,7 +154,7 @@ export const Login = () => {
 
             <button type="submit" className={`w-full text-white font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center ${role === 'admin' ? 'bg-indigo-500 hover:bg-indigo-400 shadow-indigo-500/20' : 'bg-teal-500 hover:bg-teal-400 shadow-teal-500/20'}`}>
               {role === 'admin' ? <ShieldCheck className="h-5 w-5 mr-2" /> : <LogIn className="h-5 w-5 mr-2" />}
-              Login (v2)
+              Login as {role === 'admin' ? 'Admin' : 'Student'}
             </button>
           </form>
 

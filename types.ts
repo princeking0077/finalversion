@@ -4,6 +4,7 @@ export interface Course {
   title: string;
   duration: string;
   price: number;
+  validityDays?: number; // Validity in days
   originalPrice?: number;
   rating: number;
   icon: string; // Identifier for the icon
@@ -24,6 +25,7 @@ export interface Question {
   text: string;
   options: string[]; // Array of 4 options
   correctOptionIndex: number; // 0-3
+  explanation?: string; // Explanation for the correct answer
 }
 
 export interface TestItem {
@@ -32,6 +34,8 @@ export interface TestItem {
   title: string;
   questions: Question[];
   timeMinutes: number;
+  positiveMarks: number; // e.g. +4
+  negativeMarks: number; // e.g. -1
   status?: 'locked' | 'available' | 'completed'; // UI state
   score?: number; // UI state for results
 }

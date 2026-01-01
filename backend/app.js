@@ -205,6 +205,36 @@ apiRouter.delete('/resources/:id', (req, res) => {
     res.json({ success: true });
 });
 
+// 5. Result Routes
+apiRouter.get('/results', (req, res) => {
+    const db = getDB();
+    const { userId } = req.query;
+    if (userId) {
+        const userResults = db.results.filter(r => r.userId === userId);
+        return res.json(userResults);
+    }
+    res.json(db.results);
+});
+
+apiRouter.post('/results', (req, res) => {
+    try {
+        const newResult = req.body;
+        const db = getDB();
+
+        // Double Submission Check
+        const existing = db.results.find(r => r.userId === newResult.userId && r.testId === newResult.testId);
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Test already submitted.' });
+        }
+
+        db.results.push(newResult);
+        saveDB(db);
+        res.json({ success: true, result: newResult });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // ==========================================
 // MOUNTING & STATIC FILES
 // ==========================================

@@ -22,7 +22,8 @@ import {
   MonitorPlay,
   Bookmark,
   Menu,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { api, User } from '../utils/api';
 import { TestItem, DashboardTab, TestResult, CourseResource } from '../types';
@@ -32,12 +33,34 @@ import { Logo } from '../components/Logo';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<DashboardTab>(DashboardTab.OVERVIEW);
   const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState(DashboardTab.OVERVIEW); // Default to overview
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Data States
   const [assignedTests, setAssignedTests] = useState<TestItem[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
   const [resources, setResources] = useState<CourseResource[]>([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const loadData = async (currentUser: User) => {
+    try {
+      // Parallel fetch for speed
+      const [allTests, userResults, allResources] = await Promise.all([
+        api.getTests(),
+        api.getUserResults(currentUser.id),
+        api.getResources()
+      ]);
+
+      const myTests = allTests.filter(t => currentUser.enrolledCourses.includes(t.courseId));
+      setAssignedTests(myTests);
+      setResults(userResults);
+
+      const myResources = allResources.filter(r => currentUser.enrolledCourses.includes(r.courseId));
+      setResources(myResources);
+    } catch (e) {
+      console.error("Failed to load dashboard data");
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -47,22 +70,23 @@ export const Dashboard = () => {
         return;
       }
       setUser(currentUser);
-      try {
-        const allTests = await api.getTests();
-        const myTests = allTests.filter(t => currentUser.enrolledCourses.includes(t.courseId));
-        setAssignedTests(myTests);
-        setResults(api.getUserResults(currentUser.id)); // Local for now
-
-        // Load resources assigned to user's courses
-        const allResources = await api.getResources();
-        const myResources = allResources.filter(r => currentUser.enrolledCourses.includes(r.courseId));
-        setResources(myResources);
-      } catch (e) {
-        console.error("Failed to load dashboard data");
-      }
+      await loadData(currentUser);
     };
     init();
   }, [navigate]);
+
+  // Auto-Refresh every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      loadData(user);
+    }, 30000); // 30s
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleManualRefresh = async () => {
+    if (user) await loadData(user);
+  };
 
   if (!user) return null;
 
@@ -118,8 +142,8 @@ export const Dashboard = () => {
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group relative overflow-hidden ${activeTab === item.id
-                    ? 'bg-teal-500/10 text-teal-400 shadow-[inset_0_0_0_1px_rgba(20,184,166,0.2)]'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-teal-500/10 text-teal-400 shadow-[inset_0_0_0_1px_rgba(20,184,166,0.2)]'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
                   }`}
               >
                 {activeTab === item.id && (
@@ -158,7 +182,7 @@ export const Dashboard = () => {
 
           <div className="hidden md:flex items-center text-slate-400 text-sm">
             <span className="mr-2">Session:</span>
-            <span className="font-mono text-teal-400 bg-teal-500/10 px-2 py-1 rounded text-xs">{new Date().toLocaleDateString()}</span>
+            <span className="text-teal-400 font-mono font-bold">Active</span>
           </div>
 
           <div className="flex items-center gap-3 md:gap-4">
@@ -166,6 +190,7 @@ export const Dashboard = () => {
               <Search className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-teal-500 transition-colors" />
               <input type="text" placeholder="Search..." className="bg-slate-950 border border-white/10 rounded-full py-2 pl-9 pr-4 text-sm text-white focus:ring-1 focus:ring-teal-500 outline-none w-48 transition-all focus:w-64 focus:bg-slate-900" />
             </div>
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <button className="p-2 md:p-2.5 text-slate-400 hover:text-white transition-colors relative hover:bg-white/5 rounded-full border border-transparent hover:border-white/10">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 md:top-2.5 right-2 md:right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-slate-900 animate-pulse"></span>
@@ -320,7 +345,13 @@ const OverviewTab = ({ setActiveTab, user, assignedTests, results }: { setActive
   );
 };
 
-const ClassroomTab = ({ resources }: { resources: CourseResource[] }) => {
+
+const isCourseExpired = (courseId: string, user: User) => {
+  if (!user.courseExpiry || !user.courseExpiry[courseId]) return false;
+  return new Date(user.courseExpiry[courseId]) < new Date();
+};
+
+const ClassroomTab = ({ resources, user }: { resources: CourseResource[], user: User }) => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end mb-6">
@@ -345,48 +376,79 @@ const ClassroomTab = ({ resources }: { resources: CourseResource[] }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {resources.map((res) => (
-            <div key={res.id} className="glass-card rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/40 transition-all hover:-translate-y-2 hover:shadow-2xl group flex flex-col">
-              {/* Thumbnail Placeholder */}
-              <div className="h-40 bg-slate-900 relative group-hover:bg-slate-800 transition-colors flex items-center justify-center overflow-hidden">
-                <div className={`absolute inset-0 bg-gradient-to-t ${res.type === 'video' ? 'from-indigo-900/80' : 'from-rose-900/80'} to-transparent opacity-60`}></div>
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 border-white/20 backdrop-blur-sm transition-all group-hover:scale-110 ${res.type === 'video' ? 'bg-indigo-500 text-white' : 'bg-rose-500 text-white animate-pulse'}`}>
-                  {res.type === 'video' ? <Play className="h-5 w-5 fill-current ml-1" /> : <MonitorPlay className="h-5 w-5" />}
-                </div>
-                <span className={`absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded backdrop-blur-md border border-white/10 ${res.type === 'video' ? 'bg-indigo-500/80 text-white' : 'bg-rose-500/80 text-white'}`}>
-                  {res.type}
-                </span>
-              </div>
+          {resources.map((res) => {
+            const expired = isCourseExpired(res.courseId, user);
+            const courseTitle = COURSES.find(c => c.id === res.courseId)?.title;
 
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-base font-bold text-white mb-2 line-clamp-2 leading-snug group-hover:text-indigo-400 transition-colors">{res.title}</h3>
-                <p className="text-xs text-slate-500 mb-6 flex items-center">
-                  <BookOpen className="h-3 w-3 mr-1.5" />
-                  {COURSES.find(c => c.id === res.courseId)?.title}
-                </p>
-                <a
-                  href={res.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-auto block w-full text-center py-2.5 bg-white/5 border border-white/10 text-white rounded-lg text-sm font-bold hover:bg-indigo-600 hover:border-indigo-600 transition-all"
-                >
-                  {res.type === 'video' ? 'Watch Now' : 'Join Session'}
-                </a>
+            return (
+              <div key={res.id} className={`glass-card rounded-2xl overflow-hidden border border-white/5 transition-all group flex flex-col ${expired ? 'opacity-60 grayscale' : 'hover:border-indigo-500/40 hover:-translate-y-2 hover:shadow-2xl'
+                }`}>
+                {/* Thumbnail Placeholder */}
+                <div className="h-40 bg-slate-900 relative group-hover:bg-slate-800 transition-colors flex items-center justify-center overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-t ${res.type === 'video' ? 'from-indigo-900/80' : 'from-rose-900/80'} to-transparent opacity-60`}></div>
+
+                  {expired ? (
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-700 text-slate-400 border-2 border-slate-600">
+                      <LogOut className="h-5 w-5" />
+                    </div>
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 border-white/20 backdrop-blur-sm transition-all group-hover:scale-110 ${res.type === 'video' ? 'bg-indigo-500 text-white' : 'bg-rose-500 text-white animate-pulse'}`}>
+                      {res.type === 'video' ? <Play className="h-5 w-5 fill-current ml-1" /> : <MonitorPlay className="h-5 w-5" />}
+                    </div>
+                  )}
+
+                  <span className={`absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded backdrop-blur-md border border-white/10 ${expired
+                    ? 'bg-slate-800 text-slate-400'
+                    : (res.type === 'video' ? 'bg-indigo-500/80 text-white' : 'bg-rose-500/80 text-white')
+                    }`}>
+                    {res.type}
+                  </span>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col">
+                  <h3 className="text-base font-bold text-white mb-2 line-clamp-2 leading-snug group-hover:text-indigo-400 transition-colors">{res.title}</h3>
+                  <p className="text-xs text-slate-500 mb-6 flex items-center">
+                    <BookOpen className="h-3 w-3 mr-1.5" />
+                    {courseTitle}
+                  </p>
+
+                  {expired ? (
+                    <button disabled className="mt-auto block w-full text-center py-2.5 bg-slate-800 border border-white/5 text-slate-500 rounded-lg text-sm font-bold cursor-not-allowed">
+                      Course Expired
+                    </button>
+                  ) : (
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-auto block w-full text-center py-2.5 bg-white/5 border border-white/10 text-white rounded-lg text-sm font-bold hover:bg-indigo-600 hover:border-indigo-600 transition-all"
+                    >
+                      {res.type === 'video' ? 'Watch Now' : 'Join Session'}
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 };
 
-const AssignedTestsTab = ({ tests, results }: { tests: TestItem[], results: TestResult[] }) => {
+const AssignedTestsTab = ({ tests, results, user, onRefresh }: { tests: TestItem[], results: TestResult[], user: User, onRefresh: () => void }) => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await onRefresh();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   const filteredTests = tests.filter(test => {
-    const isCompleted = results.some(r => r.testId === test.id);
+    const isCompleted = results.some(r => String(r.testId) === String(test.id));
     if (filter === 'pending') return !isCompleted;
     if (filter === 'completed') return isCompleted;
     return true;
@@ -395,7 +457,16 @@ const AssignedTestsTab = ({ tests, results }: { tests: TestItem[], results: Test
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-white font-heading">Assessment Center</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-white font-heading">Assessment Center</h2>
+          <button
+            onClick={handleRefresh}
+            className={`p-2 rounded-lg bg-slate-800 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-700 transition-all ${isRefreshing ? 'animate-spin text-teal-400' : ''}`}
+            title="Refresh Results"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
 
         <div className="flex bg-slate-900 p-1 rounded-xl border border-white/10 overflow-x-auto max-w-full">
           {(['all', 'pending', 'completed'] as const).map(f => (
@@ -423,27 +494,34 @@ const AssignedTestsTab = ({ tests, results }: { tests: TestItem[], results: Test
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTests.map(test => {
-            const result = results.find(r => r.testId === test.id);
+            const result = results.find(r => String(r.testId) === String(test.id));
             const isCompleted = !!result;
             const percentage = isCompleted ? Math.round((result.score / result.totalQuestions) * 100) : 0;
+            const expired = isCourseExpired(test.courseId, user) && !isCompleted;
 
             return (
               <div key={test.id} className={`glass-card rounded-2xl p-6 border transition-all duration-300 flex flex-col h-full group ${isCompleted
-                  ? 'border-emerald-500/20 hover:border-emerald-500/40'
+                ? 'border-emerald-500/20 hover:border-emerald-500/40'
+                : expired
+                  ? 'border-slate-700 opacity-70'
                   : 'border-white/10 hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-900/20'
                 }`}>
                 <div className="flex justify-between items-start mb-4">
                   <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-colors ${isCompleted
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                    : expired
+                      ? 'bg-slate-800 text-slate-500'
                       : 'bg-slate-800 text-slate-400 group-hover:bg-teal-500 group-hover:text-white'
                     }`}>
-                    {isCompleted ? <CheckCircle className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                    {isCompleted ? <CheckCircle className="h-6 w-6" /> : expired ? <LogOut className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border ${isCompleted
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : expired
+                      ? 'bg-red-500/10 text-red-400 border-red-500/20'
                       : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                     }`}>
-                    {isCompleted ? 'Completed' : 'Pending'}
+                    {isCompleted ? 'Completed' : expired ? 'Expired' : 'Pending'}
                   </span>
                 </div>
 
@@ -462,6 +540,13 @@ const AssignedTestsTab = ({ tests, results }: { tests: TestItem[], results: Test
                         {percentage}%
                       </span>
                     </div>
+                  ) : expired ? (
+                    <button
+                      disabled
+                      className="w-full py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-bold cursor-not-allowed"
+                    >
+                      Course Expired
+                    </button>
                   ) : (
                     <button
                       onClick={() => navigate(`/test/${test.id}`)}
@@ -479,6 +564,7 @@ const AssignedTestsTab = ({ tests, results }: { tests: TestItem[], results: Test
     </div>
   );
 };
+
 
 const AnalyticsTab = ({ results }: { results: TestResult[] }) => {
   const chartData = results.length > 0

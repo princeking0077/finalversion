@@ -15,7 +15,8 @@ export interface User {
     password?: string; // Optional in response
     role: 'student' | 'admin';
     status: 'pending' | 'approved' | 'rejected';
-    enrolledCourses: string[];
+    enrolledCourses: string[]; // Course IDs
+    courseExpiry?: { [courseId: string]: string }; // ISO Date String of expiry
 }
 
 export const api = {
@@ -147,16 +148,22 @@ export const api = {
     // I will just use local storage for results as it wasn't a core requirement "Admin login check", "Registration".
     // But for "Professional", result tracking is good. I will stick to LocalStorage for Results for now
     // to minimize risk, as the user emphasized "without errors".
-    saveTestResult: (result: TestResult) => {
-        const STORAGE_KEY = 'epa_test_results';
-        const results: TestResult[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const filtered = results.filter(r => !(r.userId === result.userId && r.testId === result.testId));
-        filtered.push(result);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    // Results
+    saveTestResult: async (result: TestResult) => {
+        const res = await fetch(`${API_URL}/results`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(result),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Failed to save result');
+        }
     },
 
-    getUserResults: (userId: string): TestResult[] => {
-        const results: TestResult[] = JSON.parse(localStorage.getItem('epa_test_results') || '[]');
-        return results.filter(r => r.userId === userId);
+    getUserResults: async (userId: string): Promise<TestResult[]> => {
+        const res = await fetch(`${API_URL}/results?userId=${userId}`);
+        if (!res.ok) return [];
+        return await res.json();
     }
 };

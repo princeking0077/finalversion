@@ -27,27 +27,54 @@ export const TestPlayer = () => {
             return;
         }
 
-        const loadTest = async () => {
-            if (testId) {
-                try {
-                    // Fetch all tests and find (or implement getTestById in API)
-                    const tests = await api.getTests();
-                    const t = tests.find(item => item.id === testId);
+        const init = async () => {
+            if (!testId) return;
 
-                    if (t) {
-                        setTest(t);
-                        setTimeLeft(t.timeMinutes * 60);
-                    } else {
-                        addToast("Test not found", 'error');
-                        navigate('/dashboard');
-                    }
-                } catch (e) {
-                    addToast("Error loading test", 'error');
+            try {
+                // 1. Fetch Test
+                const tests = await api.getTests();
+                const t = tests.find(item => item.id === testId);
+
+                if (!t) {
+                    addToast("Test not found", 'error');
                     navigate('/dashboard');
+                    return;
                 }
+
+                // 2. Fetch Results (awaiting properly)
+                const results = await api.getUserResults(user.id);
+                const prev = results.find(r => r.testId === testId);
+
+                if (prev) {
+                    setTest(t);
+                    setScore(prev.score);
+                    setIsSubmitted(true);
+                    addToast("You have already completed this test.", 'info');
+                    return;
+                }
+
+                // 3. Check Course Validity (Only if not submitted)
+                if (user.courseExpiry && user.courseExpiry[t.courseId]) {
+                    const expiry = new Date(user.courseExpiry[t.courseId]);
+                    if (expiry < new Date()) {
+                        addToast("Access Denied: Your course validity has expired.", 'error');
+                        navigate('/dashboard');
+                        return;
+                    }
+                }
+
+                // 4. Start Test
+                setTest(t);
+                setTimeLeft(t.timeMinutes * 60);
+
+            } catch (e) {
+                console.error(e);
+                addToast("Error loading test", 'error');
+                navigate('/dashboard');
             }
         };
-        loadTest();
+
+        init();
     }, [testId, navigate, addToast]);
 
     useEffect(() => {
@@ -74,7 +101,9 @@ export const TestPlayer = () => {
         let calcScore = 0;
         test.questions.forEach((q, idx) => {
             if (answers[idx] === q.correctOptionIndex) {
-                calcScore++;
+                calcScore += (test.positiveMarks || 4);
+            } else if (answers[idx] !== undefined) {
+                calcScore -= (test.negativeMarks || 1);
             }
         });
         setScore(calcScore);
@@ -135,8 +164,8 @@ export const TestPlayer = () => {
                                         key={idx}
                                         onClick={() => handleOptionSelect(idx)}
                                         className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center ${answers[currentQIndex] === idx
-                                                ? 'bg-teal-500/20 border-teal-500 text-white'
-                                                : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
+                                            ? 'bg-teal-500/20 border-teal-500 text-white'
+                                            : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
                                             }`}
                                     >
                                         <div className={`w-6 h-6 rounded-full border mr-4 flex items-center justify-center text-xs font-bold ${answers[currentQIndex] === idx ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-600 text-slate-500'
@@ -184,7 +213,7 @@ export const TestPlayer = () => {
                                         key={idx}
                                         onClick={() => setCurrentQIndex(idx)}
                                         className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-all ${currentQIndex === idx ? 'ring-2 ring-white bg-teal-500 text-white' :
-                                                answers[idx] !== undefined ? 'bg-teal-500/50 text-white' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                                            answers[idx] !== undefined ? 'bg-teal-500/50 text-white' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                                             }`}
                                     >
                                         {idx + 1}
@@ -204,9 +233,41 @@ export const TestPlayer = () => {
 
                             <div className="bg-slate-900/80 p-6 rounded-xl border border-white/5 mb-8">
                                 <p className="text-slate-500 text-sm uppercase tracking-widest mb-1">Your Score</p>
-                                <p className="text-4xl font-bold text-white">
-                                    {score} <span className="text-xl text-slate-500 font-medium">/ {test.questions.length}</span>
+                                <p className="text-4xl font-bold text-white mb-2">
+                                    {score} <span className="text-xl text-slate-500 font-medium">/ {test.questions.length * (test.positiveMarks || 4)}</span>
                                 </p>
+                                <p className="text-xs text-slate-400">
+                                    (+{test.positiveMarks || 4} for Correct, -{test.negativeMarks || 1} for Wrong)
+                                </p>
+                            </div>
+
+                            <div className="space-y-6 text-left mb-8 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                <h3 className="text-white font-bold border-b border-white/10 pb-2">Detailed Analysis</h3>
+                                {test.questions.map((q, idx) => {
+                                    const isCorrect = answers[idx] === q.correctOptionIndex;
+                                    const isSkipped = answers[idx] === undefined;
+                                    return (
+                                        <div key={idx} className={`p-4 rounded-xl border ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/20' : isSkipped ? 'bg-slate-800/50 border-white/5' : 'bg-red-500/10 border-red-500/20'}`}>
+                                            <p className="text-white font-bold mb-2"><span className="text-slate-500 mr-2">Q{idx + 1}.</span> {q.text}</p>
+                                            <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                                                <div className={`${isCorrect ? 'text-emerald-400' : isSkipped ? 'text-slate-400' : 'text-red-400'}`}>
+                                                    <span className="font-bold block text-xs opacity-70 uppercase">Your Answer</span>
+                                                    {isSkipped ? 'Skipped' : q.options[answers[idx]]}
+                                                </div>
+                                                <div className="text-emerald-400">
+                                                    <span className="font-bold block text-xs opacity-70 uppercase">Correct Answer</span>
+                                                    {q.options[q.correctOptionIndex]}
+                                                </div>
+                                            </div>
+                                            {q.explanation && (
+                                                <div className="bg-slate-950/50 p-3 rounded-lg border border-white/5 text-sm text-slate-300">
+                                                    <p className="font-bold text-indigo-400 text-xs uppercase mb-1">Explanation</p>
+                                                    {q.explanation}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <button
