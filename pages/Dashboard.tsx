@@ -204,8 +204,8 @@ export const Dashboard = () => {
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth custom-scrollbar">
           <div className="max-w-7xl mx-auto animate-fade-in pb-20 md:pb-10">
             {activeTab === DashboardTab.OVERVIEW && <OverviewTab setActiveTab={setActiveTab} user={user} assignedTests={assignedTests} results={results} />}
-            {activeTab === DashboardTab.SUBJECT_TESTS && <AssignedTestsTab tests={assignedTests} results={results} />}
-            {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} />}
+            {activeTab === DashboardTab.SUBJECT_TESTS && <AssignedTestsTab tests={assignedTests} results={results} user={user} onRefresh={handleManualRefresh} />}
+            {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} user={user} />}
             {activeTab === DashboardTab.ANALYTICS && <AnalyticsTab results={results} />}
           </div>
         </div>

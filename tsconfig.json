@@ -27,7 +27,8 @@
     "noEmit": true
   },
   "include": [
-    "src"
+    "**/*.ts",
+    "**/*.tsx"
   ],
   "exclude": [
     "backend",

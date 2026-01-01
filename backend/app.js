@@ -41,7 +41,69 @@ const getDB = () => {
                 }],
                 tests: [],
                 resources: [],
-                results: []
+                results: [],
+                courses: [
+                    {
+                        id: 'gpat-2026',
+                        title: 'GPAT 2026 Complete Course',
+                        duration: '120+ Hrs',
+                        price: 4999,
+                        validityDays: 730,
+                        originalPrice: 8000,
+                        rating: 4.8,
+                        icon: 'graduation',
+                        color: 'from-emerald-500 to-teal-500',
+                        category: 'National Level',
+                        description: 'Comprehensive preparation for GPAT 2026 with live classes and test series.',
+                        chapters: 45,
+                        students: 1200
+                    },
+                    {
+                        id: 'niper-mastery',
+                        title: 'NIPER Entrance Mastery',
+                        duration: '80+ Hrs',
+                        price: 3999,
+                        validityDays: 365,
+                        originalPrice: 6000,
+                        rating: 4.7,
+                        icon: 'microscope',
+                        color: 'from-violet-500 to-purple-500',
+                        category: 'National Level',
+                        description: 'Specialized coaching for NIPER JEE aspirants with advanced study material.',
+                        chapters: 30,
+                        students: 850
+                    },
+                    {
+                        id: 'mpsc-di',
+                        title: 'MPSC Drug Inspector Series',
+                        duration: '30 Days',
+                        price: 999,
+                        validityDays: 180,
+                        originalPrice: 1999,
+                        rating: 4.6,
+                        icon: 'briefcase',
+                        color: 'from-blue-500 to-indigo-500',
+                        category: 'State Level',
+                        description: 'Targeted test series for Maharashtra Drug Inspector exams.',
+                        chapters: 15,
+                        students: 2000
+                    },
+                    {
+                        id: 'dpee-prep',
+                        title: 'DPEE Complete Preparation',
+                        duration: '100+ Hrs',
+                        price: 2999,
+                        validityDays: 365,
+                        originalPrice: 5000,
+                        rating: 4.9,
+                        icon: 'certificate',
+                        color: 'from-orange-500 to-red-500',
+                        category: 'Exit Exam',
+                        description: 'Diploma Pharmacy Exit Exam full syllabus coverage.',
+                        chapters: 40,
+                        students: 500
+                    }
+                ]
             };
             fs.ensureDirectoryExists && fs.ensureDirectoryExists(path.dirname(DB_FILE)); // Safety check if using fs-extra, but we are using native fs, so:
             if (!fs.existsSync(path.dirname(DB_FILE))) {
@@ -53,7 +115,7 @@ const getDB = () => {
         return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
     } catch (e) {
         console.error("DB Read Error:", e);
-        return { users: [], tests: [], resources: [], results: [] };
+        return { users: [], tests: [], resources: [], results: [], courses: [] };
     }
 };
 
@@ -170,6 +232,46 @@ apiRouter.put('/users/:id', (req, res) => {
     }
 });
 
+// 3.5 Course Routes
+apiRouter.get('/courses', (req, res) => {
+    const db = getDB();
+    res.json(db.courses || []);
+});
+
+apiRouter.post('/courses', (req, res) => {
+    const newCourse = req.body;
+    const db = getDB();
+    if (!db.courses) db.courses = [];
+    db.courses.push(newCourse);
+    saveDB(db);
+    res.json({ success: true, course: newCourse });
+});
+
+apiRouter.put('/courses/:id', (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+    const db = getDB();
+    if (!db.courses) db.courses = [];
+    const index = db.courses.findIndex(c => c.id === id);
+
+    if (index !== -1) {
+        db.courses[index] = { ...db.courses[index], ...updates };
+        saveDB(db);
+        res.json({ success: true, course: db.courses[index] });
+    } else {
+        res.status(404).json({ success: false, message: 'Course not found' });
+    }
+});
+
+apiRouter.delete('/courses/:id', (req, res) => {
+    const { id } = req.params;
+    const db = getDB();
+    if (!db.courses) db.courses = [];
+    db.courses = db.courses.filter(c => c.id !== id);
+    saveDB(db);
+    res.json({ success: true });
+});
+
 // 4. Test & Resource Routes
 apiRouter.get('/tests', (req, res) => {
     const db = getDB();
@@ -182,6 +284,36 @@ apiRouter.post('/tests', (req, res) => {
     db.tests.push(newTest);
     saveDB(db);
     res.json({ success: true, test: newTest });
+});
+
+apiRouter.put('/tests/:id', (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+    const db = getDB();
+    const index = db.tests.findIndex(t => t.id === id);
+
+    if (index !== -1) {
+        // preserve ID just in case
+        db.tests[index] = { ...db.tests[index], ...updates, id };
+        saveDB(db);
+        res.json({ success: true, test: db.tests[index] });
+    } else {
+        res.status(404).json({ success: false, message: 'Test not found' });
+    }
+});
+
+apiRouter.delete('/tests/:id', (req, res) => {
+    const { id } = req.params;
+    const db = getDB();
+    const initialLength = db.tests.length;
+    db.tests = db.tests.filter(t => t.id !== id);
+
+    if (db.tests.length !== initialLength) {
+        saveDB(db);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ success: false, message: 'Test not found' });
+    }
 });
 
 apiRouter.get('/resources', (req, res) => {

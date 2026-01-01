@@ -1,4 +1,5 @@
-import { TestItem, TestResult, CourseResource } from '../types';
+/// <reference types="vite/client" />
+import { TestItem, TestResult, CourseResource, Course } from '../types';
 
 // API Base URL - In production, this might be dynamic, but for now relative path works if served from same origin
 // API Base URL - Strict Production URL to avoid confusion
@@ -122,8 +123,52 @@ export const api = {
         });
     },
 
-    // Resources
-    getResources: async (): Promise<CourseResource[]> => {
+    updateTest: async (id: string, test: Partial<TestItem>) => {
+        const res = await fetch(`${API_URL}/tests/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(test)
+        });
+        return res.json();
+    },
+
+    deleteTest: async (id: string) => {
+        const res = await fetch(`${API_URL}/tests/${id}`, {
+            method: 'DELETE'
+        });
+        return res.json();
+    },
+
+    // Courses
+    getCourses: async (): Promise<Course[]> => {
+        const res = await fetch(`${API_URL}/courses`);
+        return await res.json();
+    },
+
+    createCourse: async (course: Partial<Course>) => {
+        const res = await fetch(`${API_URL}/courses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(course)
+        });
+        return res.json();
+    },
+
+    updateCourse: async (id: string, updates: Partial<Course>) => {
+        const res = await fetch(`${API_URL}/courses/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        return res.json();
+    },
+
+    deleteCourse: async (id: string) => {
+        const res = await fetch(`${API_URL}/courses/${id}`, {
+            method: 'DELETE'
+        });
+        return res.json();
+    }, getResources: async (): Promise<CourseResource[]> => {
         const res = await fetch(`${API_URL}/resources`);
         return await res.json();
     },
