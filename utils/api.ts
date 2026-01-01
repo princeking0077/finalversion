@@ -17,11 +17,16 @@ export const api = {
     // Auth
     login: async (email: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> => {
         try {
+            console.log(`Attempting login for ${email} at ${API_URL}/auth/login`);
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
+            if (!res.ok) {
+                console.error('Login Fetch Error:', res.status, res.statusText);
+                throw new Error(`Server returned ${res.status} ${res.statusText}`);
+            }
             const data = await res.json();
             if (data.success && data.user) {
                 localStorage.setItem('epa_user', JSON.stringify(data.user));
@@ -29,7 +34,8 @@ export const api = {
             }
             return data;
         } catch (e) {
-            return { success: false, message: 'Network error' };
+            console.error('Login Network Error Detail:', e);
+            return { success: false, message: 'Network error. Please check console for details.' };
         }
     },
 
@@ -40,9 +46,14 @@ export const api = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(user),
             });
+            if (!res.ok) {
+                console.error('Register Fetch Error:', res.status, res.statusText);
+                throw new Error(`Server returned ${res.status} ${res.statusText}`);
+            }
             return await res.json();
         } catch (e) {
-            return { success: false, message: 'Network error' };
+            console.error('Register Network Error Detail:', e);
+            return { success: false, message: 'Network error. Please check console for details.' };
         }
     },
 
