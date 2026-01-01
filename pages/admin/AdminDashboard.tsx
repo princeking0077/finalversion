@@ -1191,7 +1191,7 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
   const [step, setStep] = useState(1);
   const [testData, setTestData] = useState({ title: '', courseId: INITIAL_COURSES[0].id, duration: 60, positiveMarks: 4, negativeMarks: 1 });
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [currQ, setCurrQ] = useState({ text: '', options: ['', '', '', ''], correct: 0, explanation: '' });
+  const [currQ, setCurrQ] = useState<{ text: string, options: string[], correct: number, explanation: string, imageUrl?: string }>({ text: '', options: ['', '', '', ''], correct: 0, explanation: '', imageUrl: '' });
   const [bulkText, setBulkText] = useState('');
 
   const startEdit = (test: TestItem) => {
@@ -1225,37 +1225,96 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
       text: currQ.text,
       options: [...currQ.options],
       correctOptionIndex: currQ.correct,
-      explanation: currQ.explanation
+      explanation: currQ.explanation,
+      imageUrl: currQ.imageUrl
     };
     setQuestions([...questions, newQ]);
-    setCurrQ({ text: '', options: ['', '', '', ''], correct: 0, explanation: '' });
+    setCurrQ({ text: '', options: ['', '', '', ''], correct: 0, explanation: '', imageUrl: '' });
     addToast("Question added to queue", 'info');
   };
 
   const parseBulk = () => {
     try {
-      const lines = bulkText.split('\n').filter(l => l.trim());
+      const text = bulkText.trim();
       const newQs: Question[] = [];
 
-      // Parse blocks of 7 lines: Q, Op1, Op2, Op3, Op4, Index, Explanation
-      const chunk = 7;
-      for (let i = 0; i < lines.length; i += chunk) {
-        if (i + 6 < lines.length) {
-          newQs.push({
-            id: Date.now() + i + '',
-            text: lines[i],
-            options: [lines[i + 1], lines[i + 2], lines[i + 3], lines[i + 4]],
-            correctOptionIndex: parseInt(lines[i + 5]) || 0,
-            explanation: lines[i + 6]
-          });
-        }
+      // Regex to split by Question Numbering (e.g., "1.", "Q1:", "1)", "Q.1")
+      // This is a naive but common pattern splitter
+      const qBlocks = text.split(/\n(?=(?:Q)?\d+[\.\)\:])/g);
+
+      if (qBlocks.length < 1 && text.length > 10) {
+        // Fallback: If no Q numbers found, try generic blocks separated by double newlines
+        const blocks = text.split(/\n\s*\n/);
+        blocks.forEach((block, i) => {
+          const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+          if (lines.length >= 5) {
+            newQs.push({
+              id: Date.now() + i + Math.random().toString(),
+              text: lines[0],
+              options: lines.slice(1, 5),
+              correctOptionIndex: 0, // Default to A, user must fix
+              explanation: '',
+              imageUrl: '' // Initialize
+            });
+          }
+        });
+      } else {
+        qBlocks.forEach((block, i) => {
+          const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+          if (lines.length >= 5) { // Needs Q + 4 Options
+            // Try to find Answer line
+            const ansLineIndex = lines.findIndex(l => l.match(/^(?:ans|answer|correct)/i));
+            let correctIdx = 0;
+            let explanation = '';
+
+            if (ansLineIndex !== -1) {
+              const ansLine = lines[ansLineIndex];
+              const match = ansLine.match(/[a-d]|[1-4]/i);
+              if (match) {
+                const val = match[0].toLowerCase();
+                if (val >= '1' && val <= '4') correctIdx = parseInt(val) - 1;
+                else correctIdx = val.charCodeAt(0) - 97; // a=0, b=1...
+              }
+              // Check for explanation after answer
+              if (ansLineIndex + 1 < lines.length) {
+                explanation = lines.slice(ansLineIndex + 1).join(' ');
+              }
+            }
+
+            // Assume first line is Question, next 4 are options (unless labelled)
+            // Filter out non-content lines if possible
+            const qText = lines[0].replace(/^(?:Q)?\d+[\.\)\:]\s*/, '');
+
+            // Extract options - look for a), b), 1), 2) etc.
+            const potentialOptions = lines.slice(1, ansLineIndex === -1 ? 5 : ansLineIndex);
+            // If we found specific option markers, strictly use them, otherwise blindly take next 4
+            // For now, blind take next 4 is safer for "paste from generic source"
+            const options = potentialOptions.slice(0, 4);
+            // Pad if less than 4
+            while (options.length < 4) options.push('Option ' + (options.length + 1));
+
+            newQs.push({
+              id: Date.now() + i + Math.random().toString(),
+              text: qText,
+              options: options,
+              correctOptionIndex: correctIdx,
+              explanation: explanation,
+              imageUrl: ''
+            });
+          }
+        });
+      }
+
+      if (newQs.length === 0) {
+        addToast("Could not parse text. Ensure 'Question' starts new block.", 'error');
+        return;
       }
 
       setQuestions([...questions, ...newQs]);
       setBulkText('');
-      addToast(`Added ${newQs.length} questions from bulk text.`, 'success');
+      addToast(`Parsed ${newQs.length} questions. Please review them in the queue.`, 'success');
     } catch (e) {
-      addToast("Error parsing bulk text. Ensure format is correct.", 'error');
+      addToast("Error parsing bulk text.", 'error');
     }
   };
 
@@ -1454,6 +1513,35 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
                       value={currQ.text}
                       onChange={e => setCurrQ({ ...currQ, text: e.target.value })}
                     />
+
+                    {/* Image Upload for Manual Entry */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Image (Optional)</label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              try {
+                                const url = await api.uploadImage(e.target.files[0]);
+                                setCurrQ({ ...currQ, imageUrl: url }); // Note: Need to update currQ type locally or add field
+                              } catch (err) {
+                                addToast("Image upload failed", 'error');
+                              }
+                            }
+                          }}
+                          className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-400"
+                        />
+                        {/* @ts-ignore - Assuming we add imageUrl to local state type or implicit any */}
+                        {currQ.imageUrl && (
+                          <div className="h-12 w-12 rounded overflow-hidden border border-white/10 bg-black">
+                            {/* @ts-ignore */}
+                            <img src={currQ.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 gap-3">
                       {currQ.options.map((opt, i) => (
                         <div key={i} className="flex gap-2 items-center">
@@ -1533,7 +1621,32 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
                           <p className="text-xs text-slate-500">Correct: {q.options[q.correctOptionIndex]}</p>
                         </div>
                       </div>
-                      <button onClick={() => setQuestions(questions.filter(qi => qi.id !== q.id))} className="text-slate-600 hover:text-rose-400 p-1 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id={`file-${q.id}`}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                try {
+                                  const url = await api.uploadImage(e.target.files[0]);
+                                  const updatedQs = questions.map(qi => qi.id === q.id ? { ...qi, imageUrl: url } : qi);
+                                  setQuestions(updatedQs);
+                                  addToast("Image attached to question", 'success');
+                                } catch (err) {
+                                  addToast("Upload failed", 'error');
+                                }
+                              }
+                            }}
+                          />
+                          <label htmlFor={`file-${q.id}`} className={`p-2 rounded-lg cursor-pointer transition-colors ${q.imageUrl ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-600 hover:text-indigo-400 hover:bg-slate-800'}`} title="Attach Image">
+                            <FileUp className="h-4 w-4" />
+                          </label>
+                        </div>
+                        <button onClick={() => setQuestions(questions.filter(qi => qi.id !== q.id))} className="text-slate-600 hover:text-rose-400 p-2 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                      </div>
                     </div>
                   ))}
                   {questions.length === 0 && (
@@ -1555,7 +1668,7 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

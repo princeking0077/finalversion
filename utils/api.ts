@@ -195,5 +195,24 @@ export const api = {
     // Leaderboard
     getLeaderboard: async (courseId: string): Promise<{ leaderboard: LeaderboardEntry[], userRank?: LeaderboardEntry }> => {
         return await request(`/leaderboard?courseId=${courseId}`);
+    },
+
+    // Uploads
+    uploadImage: async (file: File): Promise<string> => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const token = localStorage.getItem('epa_token');
+        const res = await fetch(`${API_URL}/upload`, {
+            method: 'POST',
+            headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: formData
+        });
+
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        return data.url;
     }
 };

@@ -43,6 +43,7 @@ export interface Question {
   options: string[]; // Array of 4 options
   correctOptionIndex: number; // 0-3
   explanation?: string; // Explanation for the correct answer
+  imageUrl?: string; // Optional image URL for chemical structures etc.
 }
 
 export interface TestItem {

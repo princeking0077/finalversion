@@ -155,6 +155,17 @@ export const TestPlayer = () => {
                         <div className="glass-card p-6 md:p-10 rounded-2xl border border-white/10">
                             <div className="mb-8">
                                 <span className="text-teal-400 font-bold text-sm uppercase tracking-wide mb-2 block">Question {currentQIndex + 1}</span>
+
+                                {currentQuestion.imageUrl && (
+                                    <div className="mb-6 rounded-xl overflow-hidden border border-white/10 bg-slate-900 flex justify-center p-4">
+                                        <img
+                                            src={currentQuestion.imageUrl}
+                                            alt="Question Diagram"
+                                            className="max-h-64 object-contain rounded-lg"
+                                        />
+                                    </div>
+                                )}
+
                                 <h2 className="text-xl md:text-2xl font-bold text-white leading-relaxed">{currentQuestion.text}</h2>
                             </div>
 
