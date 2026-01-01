@@ -49,6 +49,14 @@ export interface TestResult {
   date: string;
 }
 
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  score: number;
+  testsTaken: number;
+}
+
 export interface CourseResource {
   id: string;
   courseId: string;
@@ -62,5 +70,6 @@ export enum DashboardTab {
   OVERVIEW = 'overview',
   SUBJECT_TESTS = 'subject_tests',
   CLASSROOM = 'classroom',
-  ANALYTICS = 'analytics'
+  ANALYTICS = 'analytics',
+  LEADERBOARD = 'leaderboard'
 }

@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { TestItem, TestResult, CourseResource, Course } from '../types';
+import { TestItem, TestResult, CourseResource, Course, LeaderboardEntry } from '../types';
 
 // API Base URL - In production, this might be dynamic, but for now relative path works if served from same origin
 // API Base URL - Strict Production URL to avoid confusion
@@ -20,74 +20,90 @@ export interface User {
     courseExpiry?: { [courseId: string]: string }; // ISO Date String of expiry
 }
 
+// Internal helper for authenticated requests
+const request = async (endpoint: string, options: RequestInit = {}) => {
+    const token = localStorage.getItem('epa_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers as object || {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+
+    if (res.status === 401) {
+        console.warn('Unauthorized access. Logging out...');
+        api.logout();
+        // Optional: redirect to login if not already there
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
+        throw new Error('Session expired');
+    }
+
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") === -1) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text.substring(0, 100));
+        throw new Error('Server error: Expected JSON but got HTML/Text');
+    }
+
+    if (!res.ok) {
+        // Try parsing error message
+        try {
+            const err = await res.json();
+            throw new Error(err.message || `Error ${res.status}`);
+        } catch (e) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
+    }
+
+    return res.json();
+};
+
 export const api = {
     // Auth
-    login: async (email: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> => {
+    login: async (email: string, password: string): Promise<{ success: boolean; user?: User; message?: string; token?: string }> => {
         try {
-            console.log(`Attempting login for ${email} at ${API_URL}/auth/login`);
+            // using fetch directly for login to handle custom logic
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
 
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") === -1) {
-                const text = await res.text();
-                // Extract title to show user
-                const titleMatch = text.match(/<title>(.*?)<\/title>/);
-                const pageTitle = titleMatch ? titleMatch[1] : text.substring(0, 50);
-
-                alert(`DEBUG: Server returned HTML instead of JSON.\nPage Title: ${pageTitle}\n\nPlease switch back to chat and tell me this title!`);
-
-                console.error("API returned non-JSON:", text.substring(0, 100));
-                return { success: false, message: `Server Error: Expected JSON but got HTML (${pageTitle}).` };
-            }
-
-            if (!res.ok) {
-                console.error('Login Fetch Error:', res.status, res.statusText);
-                throw new Error(`Server returned ${res.status} ${res.statusText}`);
-            }
             const data = await res.json();
+
             if (data.success && data.user) {
                 localStorage.setItem('epa_user', JSON.stringify(data.user));
+                if (data.token) {
+                    localStorage.setItem('epa_token', data.token);
+                }
                 window.dispatchEvent(new Event('storage'));
             }
             return data;
-        } catch (e) {
-            console.error('Login Network Error Detail:', e);
-            return { success: false, message: 'Network error. Please check console for details.' };
+        } catch (e: any) {
+            console.error('Login Network Error:', e);
+            return { success: false, message: e.message || 'Network error' };
         }
     },
 
     register: async (user: User): Promise<{ success: boolean; message: string }> => {
         try {
-            const res = await fetch(`${API_URL}/auth/register`, {
+            return await request('/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(user),
             });
-
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") === -1) {
-                const text = await res.text();
-                return { success: false, message: `Server Error: Expected JSON but got ${contentType}` };
-            }
-
-            if (!res.ok) {
-                console.error('Register Fetch Error:', res.status, res.statusText);
-                throw new Error(`Server returned ${res.status} ${res.statusText}`);
-            }
-            return await res.json();
-        } catch (e) {
-            console.error('Register Network Error Detail:', e);
-            return { success: false, message: 'Network error. Please check console for details.' };
+        } catch (e: any) {
+            return { success: false, message: e.message };
         }
     },
 
     logout: () => {
         localStorage.removeItem('epa_user');
+        localStorage.removeItem('epa_token');
         window.dispatchEvent(new Event('storage'));
+        window.location.href = '/login';
     },
 
     getCurrentUser: (): User | null => {
@@ -97,118 +113,95 @@ export const api = {
 
     // Users
     getUsers: async (): Promise<User[]> => {
-        const res = await fetch(`${API_URL}/users`);
-        return await res.json();
+        return await request('/users');
     },
 
     updateUser: async (id: string, updates: Partial<User>) => {
-        await fetch(`${API_URL}/users/${id}`, {
+        return await request(`/users/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
         });
     },
 
     // Tests
     getTests: async (): Promise<TestItem[]> => {
-        const res = await fetch(`${API_URL}/tests`);
-        return await res.json();
+        return await request('/tests');
     },
 
     saveTest: async (test: TestItem) => {
-        await fetch(`${API_URL}/tests`, {
+        return await request('/tests', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(test),
         });
     },
 
     updateTest: async (id: string, test: Partial<TestItem>) => {
-        const res = await fetch(`${API_URL}/tests/${id}`, {
+        return await request(`/tests/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(test)
         });
-        return res.json();
     },
 
     deleteTest: async (id: string) => {
-        const res = await fetch(`${API_URL}/tests/${id}`, {
+        return await request(`/tests/${id}`, {
             method: 'DELETE'
         });
-        return res.json();
     },
 
     // Courses
     getCourses: async (): Promise<Course[]> => {
-        const res = await fetch(`${API_URL}/courses`);
-        return await res.json();
+        return await request('/courses');
     },
 
     createCourse: async (course: Partial<Course>) => {
-        const res = await fetch(`${API_URL}/courses`, {
+        return await request('/courses', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(course)
         });
-        return res.json();
     },
 
     updateCourse: async (id: string, updates: Partial<Course>) => {
-        const res = await fetch(`${API_URL}/courses/${id}`, {
+        return await request(`/courses/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
-        return res.json();
     },
 
     deleteCourse: async (id: string) => {
-        const res = await fetch(`${API_URL}/courses/${id}`, {
+        return await request(`/courses/${id}`, {
             method: 'DELETE'
         });
-        return res.json();
-    }, getResources: async (): Promise<CourseResource[]> => {
-        const res = await fetch(`${API_URL}/resources`);
-        return await res.json();
+    },
+
+    getResources: async (): Promise<CourseResource[]> => {
+        return await request('/resources');
     },
 
     saveResource: async (resource: CourseResource) => {
-        await fetch(`${API_URL}/resources`, {
+        return await request('/resources', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(resource),
         });
     },
 
     deleteResource: async (id: string) => {
-        await fetch(`${API_URL}/resources/${id}`, { method: 'DELETE' });
+        return await request(`/resources/${id}`, { method: 'DELETE' });
     },
 
-    // Results - Keeping strictly local for now or TODO implement backend
-    // For MVP professional upgrade, results often stay local or need another endpoint.
-    // I'll create a simple endpoint or keep it local for now to avoid complexity overload unless requested.
-    // Let's implement a simple local fallback for results to avoid breaking errors, 
-    // or a placeholder if I didn't add the endpoint in server.js (I didn't). 
-    // I will just use local storage for results as it wasn't a core requirement "Admin login check", "Registration".
-    // But for "Professional", result tracking is good. I will stick to LocalStorage for Results for now
-    // to minimize risk, as the user emphasized "without errors".
     // Results
     saveTestResult: async (result: TestResult) => {
-        const res = await fetch(`${API_URL}/results`, {
+        return await request('/results', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(result),
         });
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.message || 'Failed to save result');
-        }
     },
 
     getUserResults: async (userId: string): Promise<TestResult[]> => {
-        const res = await fetch(`${API_URL}/results?userId=${userId}`);
-        if (!res.ok) return [];
-        return await res.json();
+        return await request(`/results?userId=${userId}`);
+    },
+
+    // Leaderboard
+    getLeaderboard: async (courseId: string): Promise<{ leaderboard: LeaderboardEntry[], userRank?: LeaderboardEntry }> => {
+        return await request(`/leaderboard?courseId=${courseId}`);
     }
 };

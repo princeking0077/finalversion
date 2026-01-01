@@ -18,11 +18,48 @@ const DB_FILE = path.join(__dirname, 'data', 'db.json');
 app.use(cors());
 app.use(bodyParser.json());
 
+import crypto from 'crypto';
+
 // Debugging: Log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+// ==========================================
+// SESSION STORE (In-Memory for now)
+// ==========================================
+const SESSIONS = {}; // token -> { userId, expiry }
+
+const authenticate = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        // Allow unauthenticated for login/register/health/static
+        if (req.path.startsWith('/auth') || req.path === '/test' || req.path === '/health-check' || !req.path.startsWith('/api')) {
+            return next();
+        }
+        return res.status(401).json({ success: false, message: 'Missing Authorization Token' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const session = SESSIONS[token];
+
+    if (!session || new Date() > session.expiry) {
+        return res.status(401).json({ success: false, message: 'Invalid or Expired Token' });
+    }
+
+    const db = getDB();
+    const user = db.users.find(u => u.id === session.userId);
+
+    if (!user) {
+        return res.status(401).json({ success: false, message: 'User not found for token' });
+    }
+
+    req.user = user;
+    next();
+};
+
+app.use(authenticate);
 
 // Helper to read/write DB
 const getDB = () => {
@@ -182,7 +219,15 @@ apiRouter.post('/auth/login', (req, res) => {
 
         if (user) {
             const { password, ...userWithoutPass } = user;
-            res.json({ success: true, user: userWithoutPass });
+
+            // Generate Session
+            const token = crypto.randomUUID();
+            SESSIONS[token] = {
+                userId: user.id,
+                expiry: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+            };
+
+            res.json({ success: true, user: userWithoutPass, token });
         } else {
             console.log('Login Failed: Invalid credentials');
             res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -239,6 +284,7 @@ apiRouter.get('/courses', (req, res) => {
 });
 
 apiRouter.post('/courses', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const newCourse = req.body;
     const db = getDB();
     if (!db.courses) db.courses = [];
@@ -248,6 +294,7 @@ apiRouter.post('/courses', (req, res) => {
 });
 
 apiRouter.put('/courses/:id', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const { id } = req.params;
     const updates = req.body;
     const db = getDB();
@@ -264,6 +311,7 @@ apiRouter.put('/courses/:id', (req, res) => {
 });
 
 apiRouter.delete('/courses/:id', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const { id } = req.params;
     const db = getDB();
     if (!db.courses) db.courses = [];
@@ -275,10 +323,94 @@ apiRouter.delete('/courses/:id', (req, res) => {
 // 4. Test & Resource Routes
 apiRouter.get('/tests', (req, res) => {
     const db = getDB();
-    res.json(db.tests);
+    const user = req.user;
+
+    if (user.role === 'admin') {
+        return res.json(db.tests);
+    }
+
+    // Filter tests for students:
+    // 1. Must be enrolled in the course
+    // 2. Course must not be expired
+    const validCourseIds = (user.enrolledCourses || []).filter(courseId => {
+        const expiry = user.courseExpiry && user.courseExpiry[courseId];
+        // If no expiry set, assume valid (or handle as expired depending on policy, assuming valid for legacy)
+        // If expiry set, check date
+        return !expiry || new Date(expiry) > new Date();
+    });
+
+    const studentTests = db.tests.filter(t => validCourseIds.includes(t.courseId));
+    res.json(studentTests);
+});
+
+// 4.5 Leaderboard Route
+apiRouter.get('/leaderboard', (req, res) => {
+    try {
+        const { courseId } = req.query;
+        if (!courseId) return res.status(400).json({ success: false, message: 'Course ID required' });
+
+        const db = getDB();
+        const user = req.user;
+
+        // Security: Check Enrollment if student
+        if (user.role !== 'admin' && (!user.enrolledCourses || !user.enrolledCourses.includes(courseId))) {
+            return res.status(403).json({ success: false, message: 'You are not enrolled in this course' });
+        }
+
+        // 1. Get tests for this course
+        const courseTestIds = db.tests.filter(t => t.courseId === courseId).map(t => t.id);
+
+        if (courseTestIds.length === 0) {
+            return res.json({ leaderboard: [], userRank: null });
+        }
+
+        // 2. Get results for these tests
+        const relevantResults = db.results.filter(r => courseTestIds.includes(r.testId));
+
+        // 3. Aggregate scores
+        const userScores = {}; // userId -> { score, testsTaken }
+        relevantResults.forEach(r => {
+            if (!userScores[r.userId]) {
+                userScores[r.userId] = { score: 0, testsTaken: 0 };
+            }
+            userScores[r.userId].score += Number(r.score);
+            userScores[r.userId].testsTaken += 1;
+        });
+
+        // 4. Form Leaderboard Array
+        let fullLeaderboard = Object.entries(userScores).map(([uid, stats]) => {
+            const u = db.users.find(usr => usr.id === uid);
+            return {
+                userId: uid,
+                name: u ? u.name : 'Unknown Student',
+                score: stats.score,
+                testsTaken: stats.testsTaken
+            };
+        });
+
+        // 5. Sort by Score Descending
+        fullLeaderboard.sort((a, b) => b.score - a.score);
+
+        // 6. Assign Ranks
+        fullLeaderboard = fullLeaderboard.map((entry, index) => ({ ...entry, rank: index + 1 }));
+
+        // 7. Role-based Response
+        if (user.role === 'admin') {
+            return res.json({ leaderboard: fullLeaderboard });
+        } else {
+            const top10 = fullLeaderboard.slice(0, 10);
+            const userEntry = fullLeaderboard.find(e => e.userId === user.id);
+            return res.json({ leaderboard: top10, userRank: userEntry || null });
+        }
+
+    } catch (e) {
+        console.error('Leaderboard Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
 });
 
 apiRouter.post('/tests', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const newTest = req.body;
     const db = getDB();
     db.tests.push(newTest);
@@ -287,6 +419,7 @@ apiRouter.post('/tests', (req, res) => {
 });
 
 apiRouter.put('/tests/:id', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const { id } = req.params;
     const updates = req.body;
     const db = getDB();
@@ -303,6 +436,7 @@ apiRouter.put('/tests/:id', (req, res) => {
 });
 
 apiRouter.delete('/tests/:id', (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
     const { id } = req.params;
     const db = getDB();
     const initialLength = db.tests.length;
@@ -318,7 +452,19 @@ apiRouter.delete('/tests/:id', (req, res) => {
 
 apiRouter.get('/resources', (req, res) => {
     const db = getDB();
-    res.json(db.resources);
+    const user = req.user;
+
+    if (user.role === 'admin') {
+        return res.json(db.resources);
+    }
+
+    const validCourseIds = (user.enrolledCourses || []).filter(courseId => {
+        const expiry = user.courseExpiry && user.courseExpiry[courseId];
+        return !expiry || new Date(expiry) > new Date();
+    });
+
+    const studentResources = db.resources.filter(r => validCourseIds.includes(r.courseId));
+    res.json(studentResources);
 });
 
 apiRouter.post('/resources', (req, res) => {
@@ -408,6 +554,37 @@ app.get('*', (req, res) => {
     }
     res.status(404).send('Not Found (SPA index missing)');
 });
+
+// ==========================================
+// BACKGROUND JOBS
+// ==========================================
+
+const checkExpiryAndNotify = () => {
+    console.log(`[${new Date().toISOString()}] Running Daily Expiry Check...`);
+    const db = getDB();
+    const today = new Date();
+
+    db.users.forEach(user => {
+        if (!user.courseExpiry) return;
+
+        Object.entries(user.courseExpiry).forEach(([courseId, expiryDate]) => {
+            const expiry = new Date(expiryDate);
+            const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (daysLeft > 0 && daysLeft <= 7) {
+                // Simulate Email Notification
+                console.log(`[NOTIFICATION] To: ${user.email} | Subject: Course Expiring Soon! | Body: Your course '${courseId}' expires in ${daysLeft} days. Renew now!`);
+            } else if (daysLeft <= 0 && daysLeft > -1) { // Notify on day of expiry
+                console.log(`[NOTIFICATION] To: ${user.email} | Subject: Course Expired | Body: Your course '${courseId}' has expired.`);
+            }
+        });
+    });
+};
+
+// Run every 24 hours (86400000 ms)
+// For demo, we run it once on startup too
+setTimeout(checkExpiryAndNotify, 5000); // Run 5s after startup
+setInterval(checkExpiryAndNotify, 24 * 60 * 60 * 1000);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

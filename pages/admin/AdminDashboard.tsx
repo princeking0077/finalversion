@@ -7,13 +7,13 @@ import { Question, TestItem, Course, CourseResource } from '../../types';
 import {
   Users, CheckCircle, XCircle, BookOpen, Plus, Save, Trash2,
   FileText, Clock, LayoutDashboard,
-  Search, ShieldCheck, LogOut, ChevronRight, AlertCircle, FileUp, Video, MonitorPlay, ExternalLink, Edit, Zap
+  Search, ShieldCheck, LogOut, ChevronRight, AlertCircle, FileUp, Video, MonitorPlay, ExternalLink, Edit, Zap, Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
 import { useToast } from '../../components/Toast';
 
-type AdminTab = 'overview' | 'approvals' | 'courses' | 'tests' | 'content';
+type AdminTab = 'overview' | 'approvals' | 'courses' | 'tests' | 'content' | 'leaderboard';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -104,6 +104,7 @@ export const AdminDashboard = () => {
             { id: 'courses', label: 'Course Assign', icon: BookOpen },
             { id: 'content', label: 'Classroom Content', icon: Video },
             { id: 'tests', label: 'Test Creator', icon: FileText },
+            { id: 'leaderboard', label: 'Leaderboard', icon: Award },
           ].map((item) => (
             <button
               key={item.id}
@@ -172,6 +173,7 @@ export const AdminDashboard = () => {
             {activeTab === 'courses' && <CourseManagerTab users={users} courses={courses} onUpdate={refreshData} />}
             {activeTab === 'content' && <ContentManagerTab courses={courses} />}
             {activeTab === 'tests' && <TestManagerTab tests={allTests} courses={courses} onUpdate={refreshData} />}
+            {activeTab === 'leaderboard' && <AdminLeaderboardTab courses={courses} />}
           </div>
         </div>
       </main>
@@ -1454,6 +1456,88 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminLeaderboardTab = ({ courses }: { courses: Course[] }) => {
+  const [selectedCourse, setSelectedCourse] = useState<string>(courses.length > 0 ? courses[0].id : '');
+  const [leaderboard, setLeaderboard] = useState<import('../../types').LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      loadLeaderboard();
+    }
+  }, [selectedCourse]);
+
+  const loadLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getLeaderboard(selectedCourse);
+      setLeaderboard(data.leaderboard);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRankBadge = (rank: number) => {
+    if (rank === 1) return <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/50"><Award className="w-5 h-5" /></div>;
+    if (rank === 2) return <div className="w-8 h-8 rounded-full bg-slate-300/20 text-slate-300 flex items-center justify-center border border-slate-300/50"><Award className="w-5 h-5" /></div>;
+    if (rank === 3) return <div className="w-8 h-8 rounded-full bg-amber-700/20 text-amber-700 flex items-center justify-center border border-amber-700/50"><Award className="w-5 h-5" /></div>;
+    return <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-sm">#{rank}</div>;
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white font-heading">Course Leaderboard</h2>
+          <p className="text-slate-400">View rankings for all students in a course.</p>
+        </div>
+        <div className="mt-4 md:mt-0">
+          <select
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+            className="bg-slate-900 border border-white/10 text-white p-3 rounded-xl outline-none focus:border-indigo-500 min-w-[250px]"
+          >
+            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+          <h3 className="font-bold text-white">Full Ranking List</h3>
+          <span className="text-xs text-slate-500">Total Students: {leaderboard.length}</span>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-slate-500">Loading rankings...</div>
+        ) : leaderboard.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">No data available for this course yet.</div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {leaderboard.map((entry) => (
+              <div key={entry.userId} className="flex items-center justify-between p-4 hover:bg-white/5">
+                <div className="flex items-center gap-4">
+                  {getRankBadge(entry.rank)}
+                  <div>
+                    <div className="font-bold text-white flex items-center gap-2">
+                      {entry.name}
+                    </div>
+                    <div className="text-xs text-slate-500">{entry.testsTaken} tests taken</div>
+                  </div>
+                </div>
+                <div className="font-mono font-bold text-indigo-400 text-lg">
+                  {entry.score}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

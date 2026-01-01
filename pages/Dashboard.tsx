@@ -142,6 +142,7 @@ export const Dashboard = () => {
               { id: DashboardTab.SUBJECT_TESTS, icon: BookOpen, label: 'Assessments' },
               { id: DashboardTab.CLASSROOM, icon: Video, label: 'My Classroom' },
               { id: DashboardTab.ANALYTICS, icon: BarChart2, label: 'Analytics' },
+              { id: DashboardTab.LEADERBOARD, icon: Award, label: 'Leaderboard' },
             ].map((item) => (
               <button
                 key={item.id}
@@ -212,6 +213,7 @@ export const Dashboard = () => {
             {activeTab === DashboardTab.SUBJECT_TESTS && <AssignedTestsTab tests={assignedTests} results={results} user={user} onRefresh={handleManualRefresh} />}
             {activeTab === DashboardTab.CLASSROOM && <ClassroomTab resources={resources} user={user} courses={courses} />}
             {activeTab === DashboardTab.ANALYTICS && <AnalyticsTab results={results} />}
+            {activeTab === DashboardTab.LEADERBOARD && <LeaderboardTab courses={courses} user={user} />}
           </div>
         </div>
       </main>
@@ -475,6 +477,109 @@ const ClassroomTab = ({ resources, user, courses }: { resources: CourseResource[
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+const LeaderboardTab = ({ courses, user }: { courses: Course[], user: User }) => {
+  const [selectedCourse, setSelectedCourse] = useState<string>(courses.length > 0 ? courses[0].id : '');
+  const [leaderboard, setLeaderboard] = useState<import('../types').LeaderboardEntry[]>([]);
+  const [myRank, setMyRank] = useState<import('../types').LeaderboardEntry | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      loadLeaderboard();
+    }
+  }, [selectedCourse]);
+
+  const loadLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getLeaderboard(selectedCourse);
+      setLeaderboard(data.leaderboard);
+      setMyRank(data.userRank || null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRankBadge = (rank: number) => {
+    if (rank === 1) return <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/50"><Award className="w-5 h-5" /></div>;
+    if (rank === 2) return <div className="w-8 h-8 rounded-full bg-slate-300/20 text-slate-300 flex items-center justify-center border border-slate-300/50"><Award className="w-5 h-5" /></div>;
+    if (rank === 3) return <div className="w-8 h-8 rounded-full bg-amber-700/20 text-amber-700 flex items-center justify-center border border-amber-700/50"><Award className="w-5 h-5" /></div>;
+    return <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-sm">#{rank}</div>;
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white font-heading">Leaderboard</h2>
+          <p className="text-slate-400">See where you stand among your peers.</p>
+        </div>
+        <div className="mt-4 md:mt-0">
+          <select
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+            className="bg-slate-900 border border-white/10 text-white p-3 rounded-xl outline-none focus:border-indigo-500 min-w-[250px]"
+          >
+            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {myRank && (
+        <div className="glass-card p-6 rounded-2xl border border-indigo-500/30 bg-indigo-500/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <Award className="w-32 h-32 text-indigo-500" />
+          </div>
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="text-center">
+              <div className="text-xs text-indigo-300 uppercase font-bold mb-1">Your Rank</div>
+              <div className="text-4xl font-black text-white">#{myRank.rank}</div>
+            </div>
+            <div className="h-12 w-px bg-indigo-500/30"></div>
+            <div>
+              <div className="text-xl font-bold text-white">{myRank.name}</div>
+              <div className="text-indigo-200">{myRank.score} Points • {myRank.testsTaken} Tests</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-white/5 bg-white/5">
+          <h3 className="font-bold text-white">Top 10 Performers</h3>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-slate-500">Loading rankings...</div>
+        ) : leaderboard.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">No data available for this course yet.</div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {leaderboard.map((entry) => (
+              <div key={entry.userId} className={`flex items-center justify-between p-4 ${entry.userId === user.id ? 'bg-indigo-500/10' : 'hover:bg-white/5'}`}>
+                <div className="flex items-center gap-4">
+                  {getRankBadge(entry.rank)}
+                  <div>
+                    <div className="font-bold text-white flex items-center gap-2">
+                      {entry.name}
+                      {entry.userId === user.id && <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-full">YOU</span>}
+                    </div>
+                    <div className="text-xs text-slate-500">{entry.testsTaken} tests taken</div>
+                  </div>
+                </div>
+                <div className="font-mono font-bold text-indigo-400 text-lg">
+                  {entry.score}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
