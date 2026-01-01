@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { db, User } from '../utils/storage';
+import { api, User } from '../utils/api';
 import { Reveal } from '../components/Reveal';
 import { UserPlus, Mail, Lock, User as UserIcon, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -12,7 +12,7 @@ export const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -22,35 +22,40 @@ export const Register = () => {
       return;
     }
 
-    if (db.findUser(formData.email)) {
-      setError("Email already registered");
-      addToast("Email already registered", 'error');
-      return;
-    }
+    // Check local validation if needed, but backend also checks
 
     const newUser: User = {
       id: Date.now().toString(),
       name: formData.name,
       email: formData.email,
-      password: formData.password,
       role: 'student',
       status: 'pending',
+      password: formData.password, // Only strictly needed if API expects it in User object
       enrolledCourses: []
     };
 
-    db.saveUser(newUser);
-    addToast("Registration successful! Please wait for approval.", 'success');
-    navigate('/login');
+    try {
+      const res = await api.register(newUser);
+      if (res.success) {
+        addToast("Registration successful! Please wait for approval.", 'success');
+        navigate('/login');
+      } else {
+        setError(res.message || "Registration failed");
+        addToast(res.message || "Registration failed", 'error');
+      }
+    } catch (e) {
+      setError("Registration failed");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative bg-slate-950">
       <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 to-slate-900 pointer-events-none"></div>
-      
+
       <Reveal width="100%" className="max-w-md w-full">
         <div className="glass-card p-8 rounded-2xl shadow-2xl shadow-black/50 border border-white/10 relative z-10">
           <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white text-sm mb-6 transition-colors">
-             <ArrowLeft className="h-4 w-4 mr-1" /> Back to Home
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Home
           </Link>
 
           <div className="text-center mb-8">
@@ -75,7 +80,7 @@ export const Register = () => {
                   className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
                   placeholder="John Doe"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
             </div>
@@ -90,7 +95,7 @@ export const Register = () => {
                   className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
             </div>
@@ -105,7 +110,7 @@ export const Register = () => {
                   className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
             </div>
@@ -120,7 +125,7 @@ export const Register = () => {
                   className="w-full bg-slate-950/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
                   placeholder="••••••••"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 />
               </div>
             </div>

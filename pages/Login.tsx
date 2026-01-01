@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { db } from '../utils/storage';
+import { api } from '../utils/api';
 import { Reveal } from '../components/Reveal';
 import { LogIn, Mail, Lock, AlertCircle, ShieldCheck, Clock, ArrowLeft } from 'lucide-react';
 
@@ -12,39 +12,45 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [isPending, setIsPending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsPending(false);
 
-    const user = db.findUser(formData.email);
+    try {
+      const res = await api.login(formData.email, formData.password);
 
-    if (!user || user.password !== formData.password) {
-      setError("Invalid credentials");
-      return;
-    }
+      if (!res.success || !res.user) {
+        setError(res.message || "Invalid credentials");
+        return;
+      }
 
-    if (user.role !== role) {
-      setError(`This account is not registered as a ${role}`);
-      return;
-    }
+      const user = res.user;
 
-    if (user.role === 'student' && user.status === 'pending') {
-      setIsPending(true);
-      return;
-    }
+      if (user.role !== role) {
+        // Logout if role mismatch to clean state
+        api.logout();
+        setError(`This account is not registered as a ${role}`);
+        return;
+      }
 
-    if (user.role === 'student' && user.status === 'rejected') {
-      setError("Your account application was rejected. Please contact support.");
-      return;
-    }
+      if (user.role === 'student' && user.status === 'pending') {
+        setIsPending(true);
+        return;
+      }
 
-    db.login(user);
+      if (user.role === 'student' && user.status === 'rejected') {
+        setError("Your account application was rejected. Please contact support.");
+        return;
+      }
 
-    if (user.role === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/dashboard');
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (e) {
+      setError("Login failed due to network error");
     }
   };
 

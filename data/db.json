@@ -1,0 +1,16 @@
+{
+    "users": [
+        {
+            "id": "admin-1",
+            "name": "Admin User",
+            "email": "enlightenpharmaacademy@gmail.com",
+            "password": "Shoaib@001001",
+            "role": "admin",
+            "status": "approved",
+            "enrolledCourses": []
+        }
+    ],
+    "tests": [],
+    "resources": [],
+    "results": []
+}

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, MapPin, Mail, Facebook, Instagram, Youtube, Send, ShieldCheck, ChevronRight } from 'lucide-react';
 import { CONTACT_INFO } from '../constants';
-import { db, User } from '../utils/storage';
+import { api, User } from '../utils/api';
 import { Logo } from './Logo';
 
 const Header = () => {
@@ -16,7 +16,7 @@ const Header = () => {
   // Check login status on mount and on storage events
   useEffect(() => {
     const checkUser = () => {
-      setUser(db.getCurrentUser());
+      setUser(api.getCurrentUser());
     };
 
     const handleScroll = () => {
@@ -33,7 +33,7 @@ const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    db.logout();
+    api.logout();
     navigate('/');
     setIsMenuOpen(false);
   };
@@ -60,8 +60,8 @@ const Header = () => {
                 key={link.name}
                 to={link.path}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${location.pathname === link.path
-                    ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
               >
                 {link.name}
@@ -122,8 +122,8 @@ const Header = () => {
                 to={link.path}
                 onClick={() => setIsMenuOpen(false)}
                 className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${location.pathname === link.path
-                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-white'
                   }`}
               >
                 {link.name}
