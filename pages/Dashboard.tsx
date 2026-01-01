@@ -47,24 +47,29 @@ export const Dashboard = () => {
   const loadData = async (currentUser: User) => {
     try {
       // Parallel fetch for speed
-      const [allTests, userResults, allResources, allCourses] = await Promise.all([
+      const [latestUser, allTests, userResults, allResources, allCourses] = await Promise.all([
+        api.getCurrentUser() ? api.getUsers().then(users => users.find(u => u.id === currentUser.id)) : Promise.resolve(null),
         api.getTests(),
         api.getUserResults(currentUser.id),
         api.getResources(),
         api.getCourses()
       ]);
 
-      const myTests = allTests.filter(t => currentUser.enrolledCourses.includes(t.courseId));
-      setAssignedTests(myTests);
-      setResults(userResults);
+      if (latestUser) {
+        setUser(latestUser);
+        localStorage.setItem('epa_user', JSON.stringify(latestUser));
+        // Use latest user for filtering
+        const myTests = allTests.filter(t => latestUser.enrolledCourses?.includes(t.courseId));
+        setAssignedTests(myTests);
 
-      const myResources = allResources.filter(r => currentUser.enrolledCourses.includes(r.courseId));
-      setResources(myResources);
+        const myResources = allResources.filter(r => latestUser.enrolledCourses?.includes(r.courseId));
+        setResources(myResources);
 
-      const myCourses = allCourses.filter(c => currentUser.enrolledCourses.includes(c.id));
-      setCourses(myCourses);
+        const myCourses = allCourses.filter(c => latestUser.enrolledCourses?.includes(c.id));
+        setCourses(myCourses);
+      }
     } catch (e) {
-      console.error("Failed to load dashboard data");
+      console.error("Failed to load dashboard data", e);
     }
   };
 

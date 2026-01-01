@@ -27,9 +27,25 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// SESSION STORE (In-Memory for now)
-// ==========================================
-const SESSIONS = {}; // token -> { userId, expiry }
+const SESSIONS_FILE = path.join(__dirname, 'data', 'sessions.json');
+
+// Load Sessions
+let SESSIONS = {};
+try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+        SESSIONS = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
+    }
+} catch (e) {
+    console.error("Failed to load sessions:", e);
+}
+
+const saveSessions = () => {
+    try {
+        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(SESSIONS, null, 2));
+    } catch (e) {
+        console.error("Failed to save sessions:", e);
+    }
+};
 
 const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -52,7 +68,7 @@ const authenticate = (req, res, next) => {
     const token = authHeader.replace('Bearer ', '');
     const session = SESSIONS[token];
 
-    if (!session || new Date() > session.expiry) {
+    if (!session || new Date() > new Date(session.expiry)) {
         return res.status(401).json({ success: false, message: 'Invalid or Expired Token' });
     }
 
@@ -240,6 +256,7 @@ apiRouter.post('/auth/login', (req, res) => {
                 userId: user.id,
                 expiry: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
             };
+            saveSessions();
 
             res.json({ success: true, user: userWithoutPass, token });
         } else {
