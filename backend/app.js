@@ -265,6 +265,8 @@ apiRouter.post('/auth/register', (req, res) => {
         const datePart = new Date().getFullYear();
         const randomPart = Math.floor(1000 + Math.random() * 9000);
         newUser.registrationId = `REG-${datePart}-${randomPart}`;
+        console.log("Generated Reg ID:", newUser.registrationId, "for", newUser.email);
+
         newUser.paymentStatus = 'pending';
         newUser.screenshotSubmitted = false;
         newUser.status = 'pending'; // Default status until payment verified (or manual approval)

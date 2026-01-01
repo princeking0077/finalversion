@@ -424,18 +424,24 @@ const ApprovalsTab = ({ users, courses, onStatusChange, onUpdate }: { users: Use
 
   const handleSaveEdit = async () => {
     if (!editingUser) return;
-    const updates: Partial<User> = {
-      name: editForm.name,
-      email: editForm.email
-    };
-    if (editForm.password) {
-      updates.password = editForm.password;
-    }
+    try {
+      const updates: Partial<User> = {
+        name: editForm.name,
+        email: editForm.email
+      };
+      if (editForm.password) {
+        updates.password = editForm.password;
+      }
 
-    await api.updateUser(editingUser.id, updates);
-    addToast("User details updated successfully", 'success');
-    setEditingUser(null);
-    onUpdate();
+      console.log("Updating user:", editingUser.id, updates); // Debug log
+      await api.updateUser(editingUser.id, updates);
+      addToast("User details updated successfully", 'success');
+      setEditingUser(null);
+      onUpdate();
+    } catch (e: any) {
+      console.error("Failed to update user:", e);
+      addToast(e.message || "Failed to update user", 'error');
+    }
   };
 
   const filteredUsers = users.filter((u: User) => {
