@@ -35,7 +35,15 @@ const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         // Allow unauthenticated for login/register/health/static
-        if (req.path.startsWith('/auth') || req.path === '/test' || req.path === '/health-check' || !req.path.startsWith('/api')) {
+        // Allow unauthenticated for login/register/health/static AND public courses
+        const p = req.path;
+        if (
+            p.startsWith('/auth') || p.startsWith('/api/auth') ||
+            p === '/test' || p === '/api/test' ||
+            p === '/health-check' || p === '/api/health-check' ||
+            ((p === '/courses' || p === '/api/courses') && req.method === 'GET') ||
+            !p.startsWith('/api')
+        ) {
             return next();
         }
         return res.status(401).json({ success: false, message: 'Missing Authorization Token' });

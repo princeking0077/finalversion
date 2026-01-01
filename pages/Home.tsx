@@ -1,308 +1,206 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../utils/api';
-import { Course } from '../types';
-import { COURSES } from '../constants';
-import { GraduationCap, BookOpen, Users, Award, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, Target, Clock, Shield, Zap, Trophy, Video, FileText } from 'lucide-react';
+import { api, Course } from '../utils/api';
+import { GraduationCap, BookOpen, Users, Award, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, Zap, Trophy, Video, ShieldCheck, MapPin } from 'lucide-react';
+import { COURSES as STATIC_COURSES } from '../constants'; // Fallback
 
 export const Home = () => {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<Course[]>(COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchCourses = async () => {
       try {
         const data = await api.getCourses();
-        if (data && data.length > 0) setCourses(data);
+        // Fallback to static if API returns empty array (e.g. init db)
+        setCourses(data.length > 0 ? data : STATIC_COURSES);
       } catch (e) {
-        console.error('fetch courses error', e);
+        console.error('Failed to load courses', e);
+        setCourses(STATIC_COURSES);
+      } finally {
+        setLoading(false);
       }
     };
-    fetch();
+    fetchCourses();
   }, []);
 
   const features = [
-    {
-      icon: GraduationCap,
-      title: 'Expert Faculty',
-      description: 'Learn from industry professionals with years of experience in pharmaceutical education'
-    },
-    {
-      icon: BookOpen,
-      title: 'Comprehensive Curriculum',
-      description: 'Updated course content aligned with latest GPAT and NIPER exam patterns'
-    },
-    {
-      icon: Users,
-      title: 'Interactive Learning',
-      description: 'Engage with peers and mentors through live sessions and discussion forums'
-    },
-    {
-      icon: Award,
-      title: 'Certification',
-      description: 'Receive recognized certificates upon successful course completion'
-    }
-  ];
-
-  const stats = [
-    { icon: Users, value: '5000+', label: 'Students Enrolled' },
-    { icon: BookOpen, value: '50+', label: 'Expert Courses' },
-    { icon: Award, value: '95%', label: 'Success Rate' },
-    { icon: Star, value: '4.8/5', label: 'Average Rating' }
-  ];
-
-  const benefits = [
-    'Flexible learning schedule',
-    'Access to study materials 24/7',
-    'Regular mock tests and assessments',
-    'Personalized doubt clearing sessions',
-    'Performance tracking and analytics',
-    'Mobile-friendly platform'
+    { icon: GraduationCap, title: 'Expert Faculty', desc: 'Succeed with guidance from top pharmaceutical educators.' },
+    { icon: BookOpen, title: 'Comprehensive Material', desc: 'Resources aligned with latest GPAT & NIPER patterns.' },
+    { icon: Users, title: 'Live Mentorship', desc: 'Interactive sessions to clear doubts instantly.' },
+    { icon: Award, title: 'Certified Success', desc: 'Join thousands of students achieving their dreams.' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-teal-500/30">
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-indigo-500/10"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 relative">
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Empowering Future
-              <span className="block bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">
-                Pharmacists
-              </span>
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-teal-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-[40%] left-[40%] w-[30%] h-[30%] bg-indigo-600/10 rounded-full blur-[100px]"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-8 animate-fade-in-up">
+              <Sparkles className="h-4 w-4 text-amber-400 fill-amber-400" />
+              <span className="text-sm font-medium text-slate-200">India's #1 Pharma Entrance Platform</span>
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              Master Your <br />
+              <span className="bg-gradient-to-r from-teal-400 via-indigo-400 to-purple-400 text-transparent bg-clip-text">Pharma Career</span>
             </h1>
-            <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto">
-              Master pharmaceutical sciences with expert guidance and comprehensive courses designed for GPAT, NIPER, and other competitive exams
+
+            <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              Comprehensive preparation for GPAT, NIPER, and Drug Inspector exams with expert-curated courses and real-time analytics.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               <button
                 onClick={() => navigate('/courses')}
-                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-semibold hover:from-teal-600 hover:to-teal-700 transition-all duration-200 shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2"
+                className="group relative px-8 py-4 bg-teal-500 text-white rounded-xl font-bold overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(20,184,166,0.3)]"
               >
-                Explore Courses
-                <ArrowRight className="h-5 w-5" />
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <span className="relative flex items-center gap-2">
+                  Explore Courses <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
               </button>
+
               <button
-                onClick={() => navigate('/signup')}
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/20 transition-all duration-200 border border-white/20"
+                onClick={() => navigate('/register')}
+                className="px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all hover:border-white/20"
               >
-                Sign Up Free
+                Start Free Trial
               </button>
             </div>
           </div>
+
+          {/* Floaters (Decorative) */}
+          <div className="hidden lg:block absolute top-20 left-10 animate-float" style={{ animationDuration: '6s' }}>
+            <div className="glass-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur-md">
+              <Trophy className="w-8 h-8 text-yellow-400 mb-2" />
+              <div className="text-xs font-bold text-slate-300">Top Rankers</div>
+              <div className="text-lg font-bold text-white">500+</div>
+            </div>
+          </div>
+          <div className="hidden lg:block absolute bottom-20 right-10 animate-float" style={{ animationDuration: '7s', animationDelay: '1s' }}>
+            <div className="glass-card p-4 rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur-md">
+              <Users className="w-8 h-8 text-teal-400 mb-2" />
+              <div className="text-xs font-bold text-slate-300">Active Students</div>
+              <div className="text-lg font-bold text-white">10k+</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white/5 backdrop-blur-sm border-y border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-gradient-to-br from-teal-500/20 to-indigo-500/20 rounded-xl">
-                    <stat.icon className="h-8 w-8 text-teal-400" />
-                  </div>
+      {/* Stats Strip */}
+      <div className="border-y border-white/5 bg-slate-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { label: 'Success Rate', value: '98%', icon: TrendingUp, color: 'text-emerald-400' },
+              { label: 'Video Lectures', value: '500+', icon: Video, color: 'text-rose-400' },
+              { label: 'Mock Tests', value: '200+', icon: CheckCircle, color: 'text-indigo-400' },
+              { label: 'Expert Faculty', value: '50+', icon: GraduationCap, color: 'text-amber-400' },
+            ].map((stat, i) => (
+              <div key={i} className="flex items-center gap-4 justify-center md:justify-start">
+                <div className={`p-3 rounded-xl bg-white/5 ${stat.color}`}>
+                  <stat.icon className="w-6 h-6" />
                 </div>
-                <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-slate-400">{stat.label}</div>
+                <div>
+                  <div className="text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-sm text-slate-500 font-medium">{stat.label}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Features Section */}
-      <section className="py-20">
+      {/* Popular Courses */}
+      <section className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-              Why Choose Enlighten Pharma Academy?
-            </h2>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              Experience excellence in pharmaceutical education with our comprehensive learning platform
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:transform hover:scale-105"
-              >
-                <div className="p-3 bg-gradient-to-br from-teal-500/20 to-indigo-500/20 rounded-xl w-fit mb-4">
-                  <feature.icon className="h-8 w-8 text-teal-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                <p className="text-slate-300">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 bg-white/5 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                Everything You Need to Succeed
-              </h2>
-              <p className="text-xl text-slate-300 mb-8">
-                Our platform provides all the tools and resources necessary for your pharmaceutical exam preparation journey
-              </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle className="h-6 w-6 text-teal-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-200">{benefit}</span>
-                  </div>
-                ))}
-              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">Popular Courses</h2>
+              <p className="text-slate-400 max-w-xl">Curated learning paths designed by industry experts to ensure your success.</p>
             </div>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-indigo-500/20 rounded-3xl blur-3xl"></div>
-              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                    <TrendingUp className="h-10 w-10 text-teal-400" />
-                    <div>
-                      <div className="font-semibold text-white">Track Your Progress</div>
-                      <div className="text-sm text-slate-400">Real-time performance analytics</div>
+            <button onClick={() => navigate('/courses')} className="text-teal-400 font-bold hover:text-teal-300 flex items-center gap-2 transition-colors">
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
+              [1, 2, 3].map(i => <div key={i} className="h-96 rounded-3xl bg-white/5 animate-pulse"></div>)
+            ) : (
+              courses.slice(0, 3).map((course) => (
+                <div key={course.id} className="group relative bg-slate-900 rounded-3xl border border-white/10 overflow-hidden hover:border-teal-500/50 transition-all duration-300 hover:transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-teal-900/20">
+                  {/* Decorative Gradient */}
+                  <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${course.color || 'from-teal-500 to-emerald-500'}`}></div>
+
+                  <div className="p-8">
+                    <div className="flex justify-between items-start mb-6">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/5 text-slate-300 border border-white/10`}>
+                        {course.category}
+                      </span>
+                      <div className="flex items-center gap-1 text-amber-400">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-bold text-sm">{course.rating}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                    <BookOpen className="h-10 w-10 text-indigo-400" />
-                    <div>
-                      <div className="font-semibold text-white">Rich Study Materials</div>
-                      <div className="text-sm text-slate-400">Videos, notes, and practice tests</div>
+
+                    <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-teal-400 transition-colors">{course.title}</h3>
+                    <p className="text-slate-400 text-sm mb-6 line-clamp-2">{course.description}</p>
+
+                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-8">
+                      <span className="flex items-center gap-1"><Zap className="w-4 h-4" /> {course.students}+ Students</span>
+                      <span className="flex items-center gap-1"><Video className="w-4 h-4" /> {course.duration}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                    <Users className="h-10 w-10 text-purple-400" />
-                    <div>
-                      <div className="font-semibold text-white">Expert Mentorship</div>
-                      <div className="text-sm text-slate-400">One-on-one guidance available</div>
+
+                    <div className="flex items-center justify-between border-t border-white/10 pt-6">
+                      <div>
+                        <span className="text-xs text-slate-500 block">Course Fee</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-white">₹{course.price}</span>
+                          <span className="text-sm text-slate-600 line-through">₹{course.originalPrice}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => navigate(`/courses/${course.id}`)} className="p-3 rounded-xl bg-white/5 hover:bg-teal-500 text-teal-400 hover:text-white transition-all">
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Features Grid */}
+      <section className="py-24 bg-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-slate-950/80"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500/10 rounded-full border border-teal-500/20 mb-4">
-              <Sparkles className="h-4 w-4 text-teal-400" />
-              <span className="text-teal-400 font-semibold text-sm">Simple Process</span>
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-              How It Works
-            </h2>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              Your journey to pharmaceutical excellence starts here
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">Why Choose Us?</h2>
+            <p className="text-slate-400">Experience the difference with our premium educational ecosystem.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                icon: Users,
-                title: 'Sign Up & Enroll',
-                description: 'Create your account and choose from our comprehensive range of pharmaceutical courses',
-                color: 'from-teal-500 to-emerald-500'
-              },
-              {
-                step: '02',
-                icon: Video,
-                title: 'Learn & Practice',
-                description: 'Access video lectures, study materials, and take regular mock tests to strengthen your knowledge',
-                color: 'from-indigo-500 to-purple-500'
-              },
-              {
-                step: '03',
-                icon: Trophy,
-                title: 'Excel & Achieve',
-                description: 'Track your progress with detailed analytics and ace your GPAT, NIPER, or other competitive exams',
-                color: 'from-orange-500 to-pink-500'
-              }
-            ].map((item, index) => (
-              <div key={index} className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl"></div>
-                <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all duration-300 hover:transform hover:-translate-y-2">
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-6 shadow-lg`}>
-                    <item.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="absolute top-8 right-8 text-6xl font-bold text-white/5">{item.step}</div>
-                  <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                  <p className="text-slate-300 leading-relaxed">{item.description}</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((f, i) => (
+              <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors text-center group">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <f.icon className="w-8 h-8 text-indigo-400" />
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white/5 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-              What Students Say
-            </h2>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              Success stories from our pharmaceutical community
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Priya Sharma',
-                role: 'GPAT 2025 Qualifier',
-                image: 'PS',
-                content: 'The structured courses and regular mock tests helped me crack GPAT with a great rank. Highly recommended!',
-                rating: 5
-              },
-              {
-                name: 'Rahul Verma',
-                role: 'B.Pharm Student',
-                image: 'RV',
-                content: 'Expert faculty and comprehensive study materials made my preparation journey smooth and effective.',
-                rating: 5
-              },
-              {
-                name: 'Anjali Patel',
-                role: 'NIPER Aspirant',
-                image: 'AP',
-                content: 'The analytics feature helped me identify my weak areas and improve consistently. Best investment!',
-                rating: 5
-              }
-            ].map((testimonial, index) => (
-              <div key={index} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-amber-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-slate-200 mb-6 leading-relaxed italic">"{testimonial.content}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 flex items-center justify-center text-white font-bold shadow-lg">
-                    {testimonial.image}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-white">{testimonial.name}</div>
-                    <div className="text-sm text-slate-400">{testimonial.role}</div>
-                  </div>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -311,40 +209,26 @@ export const Home = () => {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl">
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-indigo-500 opacity-90"></div>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="relative px-8 py-16 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full border border-white/30 mb-6">
-                <Zap className="h-4 w-4 text-white" />
-                <span className="text-white font-semibold text-sm">Limited Time Offer</span>
-              </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Ready to Start Your Journey?
-              </h2>
-              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Join thousands of students who are already preparing for their pharmaceutical careers
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-3xl overflow-hidden p-12 text-center border border-white/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-900/40 to-indigo-900/40 backdrop-blur-xl"></div>
+
+            <div className="relative z-10">
+              <h2 className="text-4xl font-bold text-white mb-6 font-heading">Ready to Start Your Journey?</h2>
+              <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+                Join the community of top performers and secure your future in pharmacy today.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => navigate('/signup')}
-                  className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-slate-100 transition-all duration-200 shadow-lg flex items-center justify-center gap-2 group"
-                >
-                  Get Started Now
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button
-                  onClick={() => navigate('/courses')}
-                  className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/20 transition-all duration-200 border border-white/30"
-                >
-                  Browse Courses
-                </button>
-              </div>
+              <button
+                onClick={() => navigate('/register')}
+                className="px-10 py-5 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-200 transition-colors shadow-xl"
+              >
+                Get Started Now
+              </button>
             </div>
           </div>
         </div>
       </section>
+
     </div>
   );
 };
