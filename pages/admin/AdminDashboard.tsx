@@ -960,10 +960,10 @@ const TestCreatorTab = ({ onTestCreated }: { onTestCreated: () => void }) => {
                     <div className="text-[10px] text-slate-500 bg-slate-950 px-2 py-1 rounded border border-white/5">Plain Text</div>
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <p className="text-xs text-slate-400 mb-2">Paste your questions below. Format: 6 lines per block (Question, Op1...Op4, CorrectIndex 0-3)</p>
+                    <p className="text-xs text-slate-400 mb-2">Paste your questions below. Format: 7 lines per block (Question, Op1, Op2, Op3, Op4, CorrectIndex, Explanation)</p>
                     <textarea
                       className="w-full flex-1 bg-slate-950 border border-white/10 rounded-lg p-3 text-white text-xs font-mono mb-4 focus:border-indigo-500 outline-none min-h-[200px]"
-                      placeholder={`Question 1 text?\nOption A\nOption B\nOption C\nOption D\n0\n\nQuestion 2 text?...`}
+                      placeholder={`Question 1 text?\nOption A\nOption B\nOption C\nOption D\n0 (Index for Option A)\nBecause Option A is correct... (Explanation)\n\nQuestion 2...`}
                       value={bulkText}
                       onChange={e => setBulkText(e.target.value)}
                     ></textarea>
