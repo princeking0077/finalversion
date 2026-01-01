@@ -155,6 +155,11 @@ app.delete('/api/resources/:id', (req, res) => {
     res.json({ success: true });
 });
 
+// ... (API Routes above)
+
+// Static Files (Move to bottom to ensure API routes are hit first)
+// app.use(express.static(path.join(__dirname, 'dist'))); // Moved to bottom
+
 // SPA Fallback
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
