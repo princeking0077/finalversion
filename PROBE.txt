@@ -1,0 +1,2 @@
+DEPLOYMENT_PROBE_TIMESTAMP=2026-01-01_10:18:00
+If you see this file on the server, the Git Pull worked.

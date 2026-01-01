@@ -8,6 +8,8 @@
     "dev": "vite",
     "start": "node backend/app.js",
     "build": "vite build",
+    "clean": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true });\"",
+    "build:force": "npm run clean && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
