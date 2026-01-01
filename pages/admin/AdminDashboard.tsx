@@ -1235,85 +1235,65 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
 
   const parseBulk = () => {
     try {
-      const text = bulkText.trim();
+      // 1. Remove blank lines to handle copy-paste artifacts
+      const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l !== '');
+
+      if (lines.length === 0) {
+        addToast("Please enter some text.", 'error');
+        return;
+      }
+
+      const chunk = 7;
+      if (lines.length % chunk !== 0) {
+        addToast(`Invalid format. Line count (${lines.length}) is not a multiple of 7. Each question MUST have exactly 7 lines.`, 'error');
+        return;
+      }
+
       const newQs: Question[] = [];
 
-      // Regex to split by Question Numbering (e.g., "1.", "Q1:", "1)", "Q.1")
-      // This is a naive but common pattern splitter
-      const qBlocks = text.split(/\n(?=(?:Q)?\d+[\.\)\:])/g);
+      for (let i = 0; i < lines.length; i += chunk) {
+        const qText = lines[i];
+        const optA = lines[i + 1];
+        const optB = lines[i + 2];
+        const optC = lines[i + 3];
+        const optD = lines[i + 4];
+        const ansLine = lines[i + 5];
+        const explanation = lines[i + 6];
 
-      if (qBlocks.length < 1 && text.length > 10) {
-        // Fallback: If no Q numbers found, try generic blocks separated by double newlines
-        const blocks = text.split(/\n\s*\n/);
-        blocks.forEach((block, i) => {
-          const lines = block.split('\n').map(l => l.trim()).filter(l => l);
-          if (lines.length >= 5) {
-            newQs.push({
-              id: Date.now() + i + Math.random().toString(),
-              text: lines[0],
-              options: lines.slice(1, 5),
-              correctOptionIndex: 0, // Default to A, user must fix
-              explanation: '',
-              imageUrl: '' // Initialize
-            });
-          }
-        });
-      } else {
-        qBlocks.forEach((block, i) => {
-          const lines = block.split('\n').map(l => l.trim()).filter(l => l);
-          if (lines.length >= 5) { // Needs Q + 4 Options
-            // Try to find Answer line
-            const ansLineIndex = lines.findIndex(l => l.match(/^(?:ans|answer|correct)/i));
-            let correctIdx = 0;
-            let explanation = '';
+        // Parse Answer Indices (Support comma separated for MSQ)
+        const indices = ansLine.split(',').map(s => parseInt(s.trim()));
+        const validIndices = indices.filter(n => !isNaN(n) && n >= 0 && n <= 3);
 
-            if (ansLineIndex !== -1) {
-              const ansLine = lines[ansLineIndex];
-              const match = ansLine.match(/[a-d]|[1-4]/i);
-              if (match) {
-                const val = match[0].toLowerCase();
-                if (val >= '1' && val <= '4') correctIdx = parseInt(val) - 1;
-                else correctIdx = val.charCodeAt(0) - 97; // a=0, b=1...
-              }
-              // Check for explanation after answer
-              if (ansLineIndex + 1 < lines.length) {
-                explanation = lines.slice(ansLineIndex + 1).join(' ');
-              }
-            }
+        if (validIndices.length === 0) {
+          addToast(`Question ${i / 7 + 1}: Invalid Answer Index '${ansLine}'. Must be 0-3.`, 'error');
+          return;
+        }
 
-            // Assume first line is Question, next 4 are options (unless labelled)
-            // Filter out non-content lines if possible
-            const qText = lines[0].replace(/^(?:Q)?\d+[\.\)\:]\s*/, '');
+        // Use first index as legacy SCQ support
+        const primaryIndex = validIndices[0];
 
-            // Extract options - look for a), b), 1), 2) etc.
-            const potentialOptions = lines.slice(1, ansLineIndex === -1 ? 5 : ansLineIndex);
-            // If we found specific option markers, strictly use them, otherwise blindly take next 4
-            // For now, blind take next 4 is safer for "paste from generic source"
-            const options = potentialOptions.slice(0, 4);
-            // Pad if less than 4
-            while (options.length < 4) options.push('Option ' + (options.length + 1));
-
-            newQs.push({
-              id: Date.now() + i + Math.random().toString(),
-              text: qText,
-              options: options,
-              correctOptionIndex: correctIdx,
-              explanation: explanation,
-              imageUrl: ''
-            });
-          }
+        newQs.push({
+          id: Date.now() + i + Math.random().toString(),
+          text: qText,
+          options: [optA, optB, optC, optD],
+          correctOptionIndex: primaryIndex,
+          correctOptionIndexes: validIndices,
+          explanation: explanation,
+          imageUrl: ''
         });
       }
 
       if (newQs.length === 0) {
-        addToast("Could not parse text. Ensure 'Question' starts new block.", 'error');
+        addToast("No valid questions parsed.", 'error');
         return;
       }
 
       setQuestions([...questions, ...newQs]);
       setBulkText('');
-      addToast(`Parsed ${newQs.length} questions. Please review them in the queue.`, 'success');
+      addToast(`Successfully parsed ${newQs.length} questions (Format v2.0).`, 'success');
+
     } catch (e) {
+      console.error(e);
       addToast("Error parsing bulk text.", 'error');
     }
   };
@@ -1590,7 +1570,13 @@ const TestManagerTab = ({ tests, courses, onUpdate }: { tests: TestItem[], cours
                     <div className="text-[10px] text-slate-500 bg-slate-950 px-2 py-1 rounded border border-white/5">Plain Text</div>
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <p className="text-xs text-slate-400 mb-2">Paste questions. Format: 7 lines/block (Q, Op1, Op2, Op3, Op4, Index, Expl)</p>
+                    <p className="text-xs text-slate-400 mb-2">Paste questions. <b>Exactly 7 lines per question</b> (No empty lines between blocks).</p>
+                    <p className="text-[10px] text-slate-500 font-mono mb-2 bg-slate-950 p-2 rounded border border-white/5">
+                      Line 1: Question Text<br />
+                      Line 2-5: Options A, B, C, D<br />
+                      Line 6: Correct Index (0=A, 1=B...). Split with comma for MSQ (e.g. 0,2)<br />
+                      Line 7: Explanation
+                    </p>
                     <textarea
                       className="w-full flex-1 bg-slate-950 border border-white/10 rounded-lg p-3 text-white text-xs font-mono mb-4 focus:border-indigo-500 outline-none min-h-[200px]"
                       placeholder={`Question 1 text ?\nOption A\nOption B\nOption C\nOption D\n0(Index for Option A) \nBecause Option A is correct... (Explanation) \n\nQuestion 2...`}
