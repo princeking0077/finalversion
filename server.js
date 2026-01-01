@@ -65,17 +65,16 @@ const saveDB = (data) => {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 };
 
-// API Routes
+// API Router
+const apiRouter = express.Router();
 
 // Auth
-app.post('/api/auth/login', (req, res) => {
+apiRouter.post('/auth/login', (req, res) => {
     const { email, password } = req.body;
     const db = getDB();
     const user = db.users.find(u => u.email === email && u.password === password);
 
     if (user) {
-        // In a real app we would sign a token, here we return the user object
-        // sensitive info removal
         const { password, ...userWithoutPass } = user;
         res.json({ success: true, user: userWithoutPass });
     } else {
@@ -83,7 +82,7 @@ app.post('/api/auth/login', (req, res) => {
     }
 });
 
-app.post('/api/auth/register', (req, res) => {
+apiRouter.post('/auth/register', (req, res) => {
     const newUser = req.body;
     const db = getDB();
 
@@ -97,14 +96,13 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 // Users
-app.get('/api/users', (req, res) => {
+apiRouter.get('/users', (req, res) => {
     const db = getDB();
-    // Return all users but hide passwords
     const safeUsers = db.users.map(({ password, ...u }) => u);
     res.json(safeUsers);
 });
 
-app.put('/api/users/:id', (req, res) => {
+apiRouter.put('/users/:id', (req, res) => {
     const { id } = req.params;
     const updates = req.body;
     const db = getDB();
@@ -120,12 +118,12 @@ app.put('/api/users/:id', (req, res) => {
 });
 
 // Tests
-app.get('/api/tests', (req, res) => {
+apiRouter.get('/tests', (req, res) => {
     const db = getDB();
     res.json(db.tests);
 });
 
-app.post('/api/tests', (req, res) => {
+apiRouter.post('/tests', (req, res) => {
     const newTest = req.body;
     const db = getDB();
     db.tests.push(newTest);
@@ -134,12 +132,12 @@ app.post('/api/tests', (req, res) => {
 });
 
 // Resources
-app.get('/api/resources', (req, res) => {
+apiRouter.get('/resources', (req, res) => {
     const db = getDB();
     res.json(db.resources);
 });
 
-app.post('/api/resources', (req, res) => {
+apiRouter.post('/resources', (req, res) => {
     const newRes = req.body;
     const db = getDB();
     db.resources.push(newRes);
@@ -147,12 +145,25 @@ app.post('/api/resources', (req, res) => {
     res.json({ success: true, resource: newRes });
 });
 
-app.delete('/api/resources/:id', (req, res) => {
+apiRouter.delete('/resources/:id', (req, res) => {
     const { id } = req.params;
     const db = getDB();
     db.resources = db.resources.filter(r => r.id !== id);
     saveDB(db);
     res.json({ success: true });
+});
+
+apiRouter.get('/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is working!', url: req.url, originalUrl: req.originalUrl });
+});
+
+// Mount Router at both /api and root to handle potential path stripping
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
+
+// Ensure this is BEFORE the SPA fallback
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ success: false, message: `API Endpoint not found: ${req.method} ${req.url}` });
 });
 
 // ... (API Routes above)
