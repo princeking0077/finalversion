@@ -2,8 +2,6 @@
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Route to server.js (Node Entry Point)
-RewriteRule ^$ server.js [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ server.js [L]
+# HOSTINGER CONFIGURATION
+# 1. Do NOT add RewriteRule to server.js here (it causes text-display).
+# 2. Set "Application Startup File" in Hostinger Panel to: backend/app.js
