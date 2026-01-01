@@ -7,7 +7,7 @@ import { Question, TestItem, Course, CourseResource } from '../../types';
 import {
   Users, CheckCircle, XCircle, BookOpen, Plus, Save, Trash2,
   FileText, Clock, LayoutDashboard,
-  Search, ShieldCheck, LogOut, ChevronRight, AlertCircle, FileUp, Video, MonitorPlay, ExternalLink, Edit
+  Search, ShieldCheck, LogOut, ChevronRight, AlertCircle, FileUp, Video, MonitorPlay, ExternalLink, Edit, Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
@@ -147,21 +147,26 @@ export const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-64 bg-indigo-900/10 pointer-events-none"></div>
+        {/* Enhanced Background with Multiple Gradients */}
+        <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-br from-indigo-900/20 via-purple-900/10 to-transparent pointer-events-none"></div>
+        <div className="absolute top-20 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Mobile Header */}
-        <div className="lg:hidden flex justify-between items-center p-4 bg-slate-900 border-b border-white/5 z-20 relative shadow-md">
+        <div className="lg:hidden flex justify-between items-center p-4 bg-gradient-to-r from-slate-900 to-slate-800 border-b border-white/10 z-20 relative shadow-lg backdrop-blur-md">
           <div className="font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-indigo-500" /> Admin
+            <div className="p-1.5 bg-indigo-500 rounded-lg">
+              <ShieldCheck className="h-4 w-4 text-white" />
+            </div>
+            <span className="bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">Admin Portal</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-400 p-2 border border-white/10 rounded-lg">
-            Menu
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-400 p-2.5 border border-white/20 rounded-xl hover:bg-white/5 transition-all backdrop-blur-sm">
+            <span className="text-xs font-bold">Menu</span>
           </button>
         </div>
 
         {/* Dynamic Content */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 scroll-smooth custom-scrollbar">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto relative z-10">
             {activeTab === 'overview' && <OverviewTab users={users} tests={allTests} courses={courses} setActiveTab={setActiveTab} />}
             {activeTab === 'approvals' && <ApprovalsTab users={users} onStatusChange={handleStatusChange} onUpdate={refreshData} />}
             {activeTab === 'courses' && <CourseManagerTab users={users} courses={courses} onUpdate={refreshData} />}
@@ -180,54 +185,74 @@ const OverviewTab = ({ users, tests, courses, setActiveTab }: { users: User[], t
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight font-heading">Admin Dashboard</h1>
-        <p className="text-slate-400">System overview and quick access controls.</p>
+      <div className="relative">
+        <div className="absolute -top-4 -left-4 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-indigo-100 to-white bg-clip-text text-transparent mb-2 tracking-tight font-heading relative">
+          Admin Dashboard
+        </h1>
+        <p className="text-slate-400 flex items-center gap-2">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+          System overview and quick access controls
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Pending Requests', value: pendingCount, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', action: () => setActiveTab('approvals') },
-          { label: 'Total Students', value: activeStudents, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10', action: () => setActiveTab('courses') },
-          { label: 'Active Tests', value: tests.length, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10', action: () => setActiveTab('tests') },
-          { label: 'Courses', value: courses.length, icon: BookOpen, color: 'text-teal-400', bg: 'bg-teal-500/10', action: () => setActiveTab('courses') },
+          { label: 'Pending Requests', value: pendingCount, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500/20 to-transparent', action: () => setActiveTab('approvals') },
+          { label: 'Total Students', value: activeStudents, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500/20 to-transparent', action: () => setActiveTab('courses') },
+          { label: 'Active Tests', value: tests.length, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', gradient: 'from-indigo-500/20 to-transparent', action: () => setActiveTab('tests') },
+          { label: 'Courses', value: courses.length, icon: BookOpen, color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/20', gradient: 'from-teal-500/20 to-transparent', action: () => setActiveTab('courses') },
         ].map((stat, i) => (
           <button
             key={i}
             onClick={stat.action}
-            className="text-left glass-card p-6 rounded-2xl hover:bg-slate-800/50 transition-all border border-white/5 hover:border-white/20 group relative overflow-hidden"
+            className={`text - left glass - card p - 6 rounded - 2xl hover: transform hover: -translate - y - 1 transition - all duration - 300 border ${stat.border} hover: border - ${stat.color.replace('text-', '')} / 40 group relative overflow - hidden shadow - lg hover: shadow - 2xl`}
           >
-            <div className={`w - 12 h - 12 rounded - xl ${stat.bg} flex items - center justify - center mb - 4 group - hover: scale - 110 transition - transform shadow - inner`}>
-              <stat.icon className={`h - 6 w - 6 ${stat.color} `} />
-            </div>
-            <p className="text-sm text-slate-400 font-medium mb-1 uppercase tracking-wide">{stat.label}</p>
-            <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
-            <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronRight className="h-5 w-5 text-slate-500" />
+            <div className={`absolute inset - 0 bg - gradient - to - br ${stat.gradient} opacity - 0 group - hover: opacity - 100 transition - opacity`}></div>
+            <div className="relative z-10">
+              <div className={`w - 12 h - 12 rounded - xl ${stat.bg} flex items - center justify - center mb - 4 group - hover: scale - 110 transition - transform shadow - lg border border - white / 10`}>
+                <stat.icon className={`h - 6 w - 6 ${stat.color} `} />
+              </div>
+              <p className="text-xs text-slate-500 font-bold mb-1 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-3xl font-bold text-white tracking-tight mb-1">{stat.value}</p>
+              <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ChevronRight className={`h - 5 w - 5 ${stat.color} `} />
+              </div>
             </div>
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="glass-card rounded-2xl border border-white/5 p-8 bg-gradient-to-br from-indigo-900/20 to-slate-900/50">
-          <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button onClick={() => setActiveTab('tests')} className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-500/20 flex flex-col items-center justify-center gap-2">
-              <Plus className="h-6 w-6" /> Create New Test
+        <div className="glass-card rounded-2xl border border-indigo-500/20 p-8 bg-gradient-to-br from-indigo-900/30 to-slate-900/50 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:blur-2xl transition-all"></div>
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2 relative z-10">
+            <Zap className="h-5 w-5 text-indigo-400" />
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-2 gap-4 relative z-10">
+            <button onClick={() => setActiveTab('tests')} className="p-5 bg-gradient-to-br from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30 flex flex-col items-center justify-center gap-2 hover:transform hover:scale-105 active:scale-95">
+              <Plus className="h-6 w-6" />
+              <span className="text-sm">Create Test</span>
             </button>
-            <button onClick={() => setActiveTab('content')} className="p-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition border border-white/10 flex flex-col items-center justify-center gap-2">
-              <Video className="h-6 w-6" /> Post Content
+            <button onClick={() => setActiveTab('content')} className="p-5 bg-slate-800/80 backdrop-blur-sm hover:bg-slate-700 text-white rounded-xl font-bold transition-all border border-white/10 hover:border-indigo-500/50 flex flex-col items-center justify-center gap-2 hover:transform hover:scale-105 active:scale-95">
+              <Video className="h-6 w-6" />
+              <span className="text-sm">Add Content</span>
             </button>
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-white/5 p-8 flex flex-col justify-center items-center text-center">
-          <div className="bg-emerald-500/10 p-4 rounded-full mb-4">
-            <CheckCircle className="h-8 w-8 text-emerald-400" />
+        <div className="glass-card rounded-2xl border border-emerald-500/20 p-8 flex flex-col justify-center items-center text-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+          <div className="bg-emerald-500/10 p-5 rounded-2xl mb-4 ring-4 ring-emerald-500/20 relative z-10">
+            <CheckCircle className="h-10 w-10 text-emerald-400" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">System Status</h3>
-          <p className="text-slate-400">All systems operational. Database is synced.</p>
+          <h3 className="text-xl font-bold text-white mb-2 relative z-10">System Healthy</h3>
+          <p className="text-slate-400 text-sm relative z-10 mb-4">All systems operational. Database synced.</p>
+          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 relative z-10">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+            <span className="font-bold">ONLINE</span>
+          </div>
         </div>
       </div>
     </div>

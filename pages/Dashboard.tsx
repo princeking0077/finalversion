@@ -223,30 +223,39 @@ const OverviewTab = ({ setActiveTab, user, assignedTests, results }: { setActive
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight font-heading">Welcome back, {user.name.split(' ')[0]} 👋</h1>
-          <p className="text-slate-400 text-sm md:text-base">Your learning journey continues. Here's your daily summary.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 relative">
+        <div className="absolute -top-6 -left-6 w-40 h-40 bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div className="relative z-10">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight font-heading">
+            Welcome back, <span className="bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">{user.name.split(' ')[0]}</span> 👋
+          </h1>
+          <p className="text-slate-400 text-sm md:text-base flex items-center gap-2">
+            <span className="hidden sm:inline">Your learning journey continues.</span>
+            Here's your daily summary
+          </p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {[
-          { label: 'Pending Tests', value: pendingTests, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
-          { label: 'Completed', value: results.length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-          { label: 'Accuracy', value: `${avgScore}%`, icon: TrendingUp, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20' },
-          { label: 'Courses', value: user.enrolledCourses.length, icon: BookOpen, color: 'text-teal-400', bg: 'bg-teal-400/10', border: 'border-teal-400/20' },
+          { label: 'Pending Tests', value: pendingTests, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', gradient: 'from-amber-500/10 to-transparent' },
+          { label: 'Completed', value: results.length, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', gradient: 'from-emerald-500/10 to-transparent' },
+          { label: 'Accuracy', value: `${avgScore}%`, icon: TrendingUp, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20', gradient: 'from-indigo-500/10 to-transparent' },
+          { label: 'Courses', value: user.enrolledCourses.length, icon: BookOpen, color: 'text-teal-400', bg: 'bg-teal-400/10', border: 'border-teal-400/20', gradient: 'from-teal-500/10 to-transparent' },
         ].map((stat, i) => (
-          <div key={i} className={`glass-card p-4 md:p-6 rounded-2xl border ${stat.border} hover:bg-white/5 transition-all duration-300 group`}>
-            <div className="flex justify-between items-start mb-3 md:mb-4">
-              <div className={`p-2 md:p-3 rounded-xl ${stat.bg} group-hover:scale-110 transition-transform`}>
-                <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.color}`} />
+          <div key={i} className={`glass - card p - 4 md:p - 6 rounded - 2xl border ${stat.border} hover: bg - white / 5 hover: transform hover: -translate - y - 1 transition - all duration - 300 group relative overflow - hidden shadow - lg`}>
+            <div className={`absolute inset - 0 bg - gradient - to - br ${stat.gradient} opacity - 0 group - hover: opacity - 100 transition - opacity`}></div>
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-3 md:mb-4">
+                <div className={`p - 2 md:p - 3 rounded - xl ${stat.bg} group - hover: scale - 110 transition - transform shadow - md border border - white / 10`}>
+                  <stat.icon className={`h - 5 w - 5 md:h - 6 md:w - 6 ${stat.color} `} />
+                </div>
+                {i === 0 && pendingTests > 0 && <span className="flex h-3 w-3 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>}
               </div>
-              {i === 0 && pendingTests > 0 && <span className="flex h-3 w-3 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>}
+              <p className="text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight">{stat.value}</p>
+              <p className="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">{stat.label}</p>
             </div>
-            <p className="text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight">{stat.value}</p>
-            <p className="text-[10px] md:text-sm text-slate-500 font-medium uppercase tracking-wider">{stat.label}</p>
           </div>
         ))}
       </div>
