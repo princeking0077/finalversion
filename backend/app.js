@@ -171,9 +171,30 @@ app.all('/api/*', (req, res) => {
 // Static Files (Move to bottom to ensure API routes are hit first)
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// SPA Fallback
+// Debug Root Handler
+app.get('/', (req, res) => {
+    const indexPath = path.join(__dirname, '../dist', 'entry.html');
+    if (!fs.existsSync(indexPath)) {
+        console.error('Entry file missing:', indexPath);
+        // List dist contents for debugging
+        try {
+            const distPath = path.join(__dirname, '../dist');
+            const files = fs.readdirSync(distPath);
+            return res.status(500).send(`SETUP ERROR: 'dist/entry.html' is missing.<br>Contents of '${distPath}':<br>${files.join('<br>')}`);
+        } catch (e) {
+            return res.status(500).send(`SETUP ERROR: Could not read dist folder. Make sure 'npm run build' ran successfully.<br>Error: ${e.message}`);
+        }
+    }
+    res.sendFile(indexPath);
+});
+
+// SPA Fallback for other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist', 'entry.html'));
+    const indexPath = path.join(__dirname, '../dist', 'entry.html');
+    if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+    }
+    res.status(404).send('Not Found (SPA index missing)');
 });
 
 app.listen(PORT, () => {
