@@ -1,8 +1,9 @@
-RewriteEngine On
-
 # Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Allow Node.js app to handle everything else
-# Do NOT add rules pointing to server.js here.
+# Route to server.js (Node Entry Point)
+RewriteRule ^$ server.js [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ server.js [L]
