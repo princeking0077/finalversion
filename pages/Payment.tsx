@@ -55,8 +55,19 @@ export const Payment = () => {
         init();
     }, [navigate, regId, courseId]);
 
-    const handleWhatsAppClick = () => {
+    const handleWhatsAppClick = async () => {
         if (!user || !course) return;
+
+        // Save pending course intent to backend
+        try {
+            await api.updateUser(user.id, {
+                pendingCourseId: course.id,
+                screenshotSubmitted: true,
+                screenshotSubmittedAt: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error("Failed to update user payment intent", e);
+        }
 
         const message = `Hello! I have completed payment for course registration.
 
@@ -75,10 +86,6 @@ Thank you!`;
 
         const encodedMessage = encodeURIComponent(message);
         window.open(`https://wa.me/${WHATAPP_NUMBER}?text=${encodedMessage}`, '_blank');
-
-        // Optimistically update submitted state? 
-        // Actual update should happen via API ideally, but we don't have separate endpoint for "submitted screenshot event" yet.
-        // We can just rely on manual verification.
     };
 
     if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;

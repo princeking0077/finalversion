@@ -1,4 +1,20 @@
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'student' | 'admin';
+  status: 'pending' | 'approved' | 'rejected' | 'banned';
+  enrolledCourses?: string[];
+  courseExpiry?: Record<string, string>;
+  registrationId?: string;
+  paymentStatus?: 'pending' | 'verified' | 'failed';
+  screenshotSubmitted?: boolean;
+  screenshotSubmittedAt?: string;
+  pendingCourseId?: string;
+}
+
 export interface Course {
   id: string;
   title: string;

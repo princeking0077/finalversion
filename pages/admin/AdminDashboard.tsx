@@ -169,7 +169,7 @@ export const AdminDashboard = () => {
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 scroll-smooth custom-scrollbar">
           <div className="max-w-6xl mx-auto relative z-10">
             {activeTab === 'overview' && <OverviewTab users={users} tests={allTests} courses={courses} setActiveTab={setActiveTab} />}
-            {activeTab === 'approvals' && <ApprovalsTab users={users} onStatusChange={handleStatusChange} onUpdate={refreshData} />}
+            {activeTab === 'approvals' && <ApprovalsTab users={users} courses={courses} onStatusChange={handleStatusChange} onUpdate={refreshData} />}
             {activeTab === 'courses' && <CourseManagerTab users={users} courses={courses} onUpdate={refreshData} />}
             {activeTab === 'content' && <ContentManagerTab courses={courses} />}
             {activeTab === 'tests' && <TestManagerTab tests={allTests} courses={courses} onUpdate={refreshData} />}
@@ -401,9 +401,13 @@ const ContentManagerTab = ({ courses }: { courses: Course[] }) => {
   );
 };
 
-const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onStatusChange: (id: string, s: 'approved' | 'rejected') => void, onUpdate: () => void }) => {
+const ApprovalsTab = ({ users, courses, onStatusChange, onUpdate }: { users: User[], courses: Course[], onStatusChange: (id: string, s: 'approved' | 'rejected') => void, onUpdate: () => void }) => {
   const { addToast } = useToast();
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
+  // ... (rest of state items unchanged)
+  // Re-declaring state here to match context, but replace_file_content usually needs exact lines.
+  // Strategy: Replace the function signature line and table headers/rows separately or look for a chunk.
+  /* Implementing Signature Change */
   const [search, setSearch] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
@@ -606,7 +610,36 @@ const ApprovalsTab = ({ users, onStatusChange, onUpdate }: { users: User[], onSt
                       {user.paymentStatus === 'pending' && (
                         <button
                           onClick={async () => {
-                            await api.updateUser(user.id, { paymentStatus: 'verified', status: 'approved' });
+                            const updates: Partial<User> = {
+                              paymentStatus: 'verified',
+                              status: 'approved'
+                            };
+
+                            // Auto-enroll if valid pending course
+                            if (user.pendingCourseId) {
+                              const course = courses.find(c => c.id === user.pendingCourseId);
+                              if (course) {
+                                const currentCourses = user.enrolledCourses || [];
+                                if (!currentCourses.includes(course.id)) {
+                                  updates.enrolledCourses = [...currentCourses, course.id];
+
+                                  // Set Expiry
+                                  const expiryDate = new Date();
+                                  expiryDate.setDate(expiryDate.getDate() + (course.validityDays || 365));
+                                  updates.courseExpiry = {
+                                    ...(user.courseExpiry || {}),
+                                    [course.id]: expiryDate.toISOString()
+                                  };
+                                }
+                              }
+                              // Clear pending after enrolling
+                              updates.pendingCourseId = undefined; // or null, but undefined usually removes field in some DBs, or just keep it as history? specific requirement was "assign there only"
+                              // keeping it clean:
+                              updates.pendingCourseId = '';
+                            }
+
+                            await api.updateUser(user.id, updates);
+                            addToast("Payment Verified & Course Assigned", 'success');
                             onUpdate();
                           }}
                           className="inline-flex items-center px-3 py-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20 text-xs font-bold"

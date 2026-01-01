@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
-import { TestItem, TestResult, CourseResource, Course, LeaderboardEntry } from '../types';
+import { TestItem, TestResult, CourseResource, Course, LeaderboardEntry, User } from '../types';
+export type { User };
 
 // API Base URL - In production, this might be dynamic, but for now relative path works if served from same origin
 // API Base URL - Strict Production URL to avoid confusion
@@ -9,20 +10,7 @@ const API_URL = import.meta.env.PROD || window.location.hostname !== 'localhost'
 
 console.log("API Configured at:", API_URL);
 
-export interface User {
-    id: string;
-    name: string;
-    email: string;
-    password?: string; // Optional in response
-    role: 'student' | 'admin';
-    status: 'pending' | 'approved' | 'rejected';
-    enrolledCourses: string[]; // Course IDs
-    courseExpiry?: { [courseId: string]: string }; // ISO Date String of expiry
-    registrationId?: string;
-    paymentStatus?: 'pending' | 'verified' | 'failed';
-    screenshotSubmitted?: boolean;
-    screenshotSubmittedAt?: string;
-}
+
 
 // Internal helper for authenticated requests
 const request = async (endpoint: string, options: RequestInit = {}) => {
