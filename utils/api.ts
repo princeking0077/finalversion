@@ -27,8 +27,14 @@ export const api = {
             const contentType = res.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") === -1) {
                 const text = await res.text();
+                // Extract title to show user
+                const titleMatch = text.match(/<title>(.*?)<\/title>/);
+                const pageTitle = titleMatch ? titleMatch[1] : text.substring(0, 50);
+
+                alert(`DEBUG: Server returned HTML instead of JSON.\nPage Title: ${pageTitle}\n\nPlease switch back to chat and tell me this title!`);
+
                 console.error("API returned non-JSON:", text.substring(0, 100));
-                return { success: false, message: `Server Error: Expected JSON but got ${contentType}. URL likely correct, but server logic failed.` };
+                return { success: false, message: `Server Error: Expected JSON but got HTML (${pageTitle}).` };
             }
 
             if (!res.ok) {
