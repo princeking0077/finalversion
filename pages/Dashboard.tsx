@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { api, User } from '../utils/api';
 import { TestItem, DashboardTab, TestResult, CourseResource, Course } from '../types';
-import { COURSES } from '../constants';
+
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Logo } from '../components/Logo';
 

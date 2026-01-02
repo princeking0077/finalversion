@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { COURSES } from '../constants';
+
 import { Clock, Star, Users, Award, PlayCircle, CheckCircle, Share2, GraduationCap, Microscope, Briefcase, FileCheck, Book, ExternalLink } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { api } from '../utils/api';
@@ -25,14 +25,6 @@ export const CourseDetail = () => {
 
     useEffect(() => {
         const fetchCourse = async () => {
-            // Check static constants first
-            const staticCourse = COURSES.find(c => c.id === id);
-            if (staticCourse) {
-                setCourse(staticCourse);
-                setLoading(false);
-                return;
-            }
-
             // Check dynamic API courses
             try {
                 const allCourses = await api.getCourses();
