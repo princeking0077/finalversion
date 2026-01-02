@@ -47,8 +47,23 @@ export const Payment = () => {
 
             // Find Course
             const allCourses = await api.getCourses();
-            const selectedCourse = allCourses.find(c => c.id === (courseId || currentUser?.enrolledCourses?.[0])); // Fallback to first enrolled or query
-            setCourse(selectedCourse || COURSES[0]); // Fallback to dummy if empty
+            let selectedCourse;
+
+            if (courseId) {
+                selectedCourse = allCourses.find(c => c.id === courseId);
+            } else if (currentUser?.enrolledCourses?.length > 0) {
+                // If no specific course requested, maybe show for their main enrolled course?
+                // But typically payment is for a NEW enrollment.
+                selectedCourse = allCourses.find(c => c.id === currentUser.enrolledCourses[0]);
+            }
+
+            if (selectedCourse) {
+                setCourse(selectedCourse);
+            } else {
+                // If course not found validly, do NOT fallback to a random default.
+                // Leave course null so UI can handle it or show error.
+                setCourse(null);
+            }
 
             setLoading(false);
         };
@@ -95,6 +110,17 @@ Thank you!`;
     if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
 
     if (!user) return null;
+
+    if (!course) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <h1 className="text-2xl font-bold mb-2">Course Not Found</h1>
+                <p className="text-slate-400 mb-6">The course you are looking for does not exist or has been removed.</p>
+                <button onClick={() => navigate('/')} className="px-6 py-2 bg-indigo-500 rounded-lg font-bold">Return Home</button>
+            </div>
+        );
+    }
 
     // UPI String
     const upiString = `upi://pay?pa=${UPI_ID}&pn=EnlightenAcademy&am=${course?.price}&tn=${user.registrationId}&cu=INR`;
