@@ -116,48 +116,58 @@ export const TestPlayer = () => {
         }
     };
 
-    const handleSubmit = () => {
-        if (!test) return;
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-        let calcScore = 0;
-        test.questions.forEach((q, idx) => {
-            const userAns = answers[idx];
+    const handleSubmit = async () => {
+        if (!test || isSubmitting) return;
+        setIsSubmitting(true);
 
-            // Check MSQ
-            if (q.correctOptionIndexes && q.correctOptionIndexes.length > 0) {
-                const correctSet = q.correctOptionIndexes.sort((a, b) => a - b).join(',');
-                const userSet = Array.isArray(userAns) ? userAns.sort((a, b) => a - b).join(',') : (userAns !== undefined ? userAns.toString() : '');
+        try {
+            let calcScore = 0;
+            test.questions.forEach((q, idx) => {
+                const userAns = answers[idx];
 
-                if (userSet === correctSet) {
-                    calcScore += (test.positiveMarks || 4);
-                } else if (userAns !== undefined) {
-                    // Partial marking? Assuming strict for now as per "0,1,2" example implication
-                    calcScore -= (test.negativeMarks || 1);
+                // Check MSQ
+                if (q.correctOptionIndexes && q.correctOptionIndexes.length > 0) {
+                    const correctSet = q.correctOptionIndexes.sort((a, b) => a - b).join(',');
+                    const userSet = Array.isArray(userAns) ? userAns.sort((a, b) => a - b).join(',') : (userAns !== undefined ? userAns.toString() : '');
+
+                    if (userSet === correctSet) {
+                        calcScore += (test.positiveMarks || 4);
+                    } else if (userAns !== undefined) {
+                        calcScore -= (test.negativeMarks || 1);
+                    }
+                } else {
+                    // SCQ Legacy
+                    if (userAns === q.correctOptionIndex) {
+                        calcScore += (test.positiveMarks || 4);
+                    } else if (userAns !== undefined) {
+                        calcScore -= (test.negativeMarks || 1);
+                    }
                 }
-            } else {
-                // SCQ Legacy
-                if (userAns === q.correctOptionIndex) {
-                    calcScore += (test.positiveMarks || 4);
-                } else if (userAns !== undefined) {
-                    calcScore -= (test.negativeMarks || 1);
-                }
-            }
-        });
-        setScore(calcScore);
-        setIsSubmitted(true);
-
-        // Save Result
-        const user = api.getCurrentUser();
-        if (user) {
-            api.saveTestResult({
-                testId: test.id,
-                userId: user.id,
-                score: calcScore,
-                totalQuestions: test.questions.length,
-                date: new Date().toISOString()
             });
+            setScore(calcScore);
+
+            // Save Result
+            const user = api.getCurrentUser();
+            if (user) {
+                await api.saveTestResult({
+                    testId: test.id,
+                    userId: user.id,
+                    score: calcScore,
+                    totalQuestions: test.questions.length,
+                    date: new Date().toISOString()
+                });
+            }
+
+            setIsSubmitted(true);
+            addToast("Test submitted successfully!", 'success');
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to submit test. Please try again.", 'error');
+        } finally {
+            setIsSubmitting(false);
         }
-        addToast("Test submitted successfully!", 'success');
     };
 
     const formatTime = (seconds: number) => {
@@ -212,12 +222,12 @@ export const TestPlayer = () => {
                                         key={idx}
                                         onClick={() => handleOptionSelect(idx)}
                                         className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center ${(Array.isArray(answers[currentQIndex]) && (answers[currentQIndex] as number[]).includes(idx)) || answers[currentQIndex] === idx
-                                                ? 'bg-teal-500/20 border-teal-500 text-white'
-                                                : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
+                                            ? 'bg-teal-500/20 border-teal-500 text-white'
+                                            : 'bg-slate-900/50 border-white/5 text-slate-300 hover:bg-white/5'
                                             }`}
                                     >
                                         <div className={`w-6 h-6 rounded-full border mr-4 flex items-center justify-center text-xs font-bold ${(Array.isArray(answers[currentQIndex]) && (answers[currentQIndex] as number[]).includes(idx)) || answers[currentQIndex] === idx
-                                                ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-600 text-slate-500'
+                                            ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-600 text-slate-500'
                                             }`}>
                                             {String.fromCharCode(65 + idx)}
                                         </div>
@@ -239,9 +249,19 @@ export const TestPlayer = () => {
                             {currentQIndex === test.questions.length - 1 ? (
                                 <button
                                     onClick={handleSubmit}
-                                    className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-400 flex items-center shadow-lg shadow-emerald-500/20"
+                                    disabled={isSubmitting}
+                                    className={`px-8 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-400 flex items-center shadow-lg shadow-emerald-500/20 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                                 >
-                                    <Save className="h-4 w-4 mr-2" /> Submit Test
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                            Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="h-4 w-4 mr-2" /> Submit Test
+                                        </>
+                                    )}
                                 </button>
                             ) : (
                                 <button
