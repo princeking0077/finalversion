@@ -337,24 +337,27 @@ const OverviewTab = ({ setActiveTab, user, assignedTests, results }: { setActive
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {results.length > 0 ? (
               <div className="space-y-4">
-                {results.slice(0, 5).map((r, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-400 border border-emerald-500/10">
-                        <CheckCircle className="h-4 w-4" />
+                {results
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 5)
+                  .map((r, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-400 border border-emerald-500/10">
+                          <CheckCircle className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-slate-200 font-medium text-sm">Test Completed</p>
+                          <p className="text-[10px] text-slate-500 font-mono uppercase">{new Date(r.date).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-slate-200 font-medium text-sm">Test Completed</p>
-                        <p className="text-[10px] text-slate-500 font-mono uppercase">{new Date(r.date).toLocaleDateString()}</p>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
+                          {Math.round((r.score / r.totalQuestions) * 100)}%
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                        {Math.round((r.score / r.totalQuestions) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm py-10">

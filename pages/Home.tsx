@@ -14,11 +14,12 @@ export const Home = () => {
     const fetchCourses = async () => {
       try {
         const data = await api.getCourses();
-        // Fallback to static if API returns empty array (e.g. init db)
-        setCourses(data.length > 0 ? data : STATIC_COURSES);
+        // Only use API data. If empty, it's empty.
+        setCourses(data);
       } catch (e) {
         console.error('Failed to load courses', e);
-        setCourses(STATIC_COURSES);
+        // On error, we might want to show nothing or an error state, but for now empty is safer than deleted courses reappearing.
+        setCourses([]);
       } finally {
         setLoading(false);
       }
